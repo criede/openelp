@@ -190,10 +190,11 @@ jobs:
       # Pages source branch regardless of build_type -- keeps running
       # alongside this job for as long as build_type stays "legacy".
       #
-      # configure-pages creates the Pages site if it does not exist yet,
-      # but does not switch an *existing* branch-based ("legacy") site to
-      # the workflow source. That switch cannot be automated here either:
-      # changing a Pages site's build_type needs repo admin rights, which
+      # configure-pages neither creates a missing Pages site (it fails with
+      # "Get Pages site failed ... Not Found") nor switches an *existing*
+      # branch-based ("legacy") site to the workflow source. Neither can be
+      # automated here: creating or reconfiguring a Pages site needs repo
+      # admin rights, which
       # the GITHUB_TOKEN's "pages" permission does not grant even with
       # "pages: write" declared (confirmed via "Resource not accessible by
       # integration", HTTP 403) -- it only covers creating deployments,

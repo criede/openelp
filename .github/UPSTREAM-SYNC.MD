@@ -392,12 +392,15 @@ sudo apt-mark hold openelp     # optional; "apt-mark unhold openelp" to resume u
 2. Enable GitHub Actions for the repository (on forks, scheduled
    workflows may be disabled initially; enable them under **Actions**).
 3. Create the repository secret **APT_SIGNING_KEY** (see "Signing key").
-4. GitHub Pages: if Pages was never enabled, nothing to do —
-   `actions/configure-pages` creates it with the **GitHub Actions** source
-   on the first deployment. If it was set up as **Deploy from a branch**
-   before, switch it once with an admin account:
-   `gh api -X PUT repos/criede/openelp/pages -f build_type=workflow` (or
-   **Settings → Pages → Build and deployment → Source**).
+4. GitHub Pages: enable it once with the **GitHub Actions** source, with
+   an admin account: `gh api -X POST repos/criede/openelp/pages -f
+   build_type=workflow` (or **Settings → Pages → Build and deployment →
+   Source → GitHub Actions**). `actions/configure-pages` does not create
+   the site by itself (without its `enablement` option, which needs more
+   than the `GITHUB_TOKEN` grants); without this step `deploy-pages` fails
+   with "Get Pages site failed ... Not Found". If Pages was set up as
+   **Deploy from a branch** before, switch it instead with
+   `gh api -X PUT repos/criede/openelp/pages -f build_type=workflow`.
 5. Start a first run under **Actions → Sync upstream → Run workflow** (or
    **Actions → Build and publish → Run workflow**; a `source_sha` typed
    there must be the full 40-character SHA). Then run
