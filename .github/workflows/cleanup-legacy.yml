@@ -1,0 +1,96 @@
+name: Clean up legacy packages
+
+# One-shot maintenance (manual dispatch): removes packages that still use
+# the old "~<codename>" version suffix from the APT repository and the
+# GitHub releases, rebuilds and re-signs the repository indices, and
+# redeploys GitHub Pages. See .github/scripts/cleanup-legacy.sh.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shared with the publishing workflows so it never races them on gh-pages.
+  group: build-and-publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.repository == 'criede/openelp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          persist-credentials: false
+
+      - name: Install APT repository tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnupg dpkg-dev apt-utils
+
+      - name: Import APT repository signing key
+        id: gpgimport
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "$APT_SIGNING_KEY" | gpg --batch --import
+          fpr=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/{print $10; exit}')
+          test -n "$fpr"
+          echo "::add-mask::$fpr"
+          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"
+
+      - name: Remove legacy packages and reindex
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GPG_KEY_FPR: ${{ steps.gpgimport.outputs.fingerprint }}
+        shell: bash
+        run: bash .github/scripts/cleanup-legacy.sh
+
+      - name: Remove imported signing key
+        if: always()
+        shell: bash
+        run: gpgconf --kill gpg-agent 2>/dev/null; rm -rf "$HOME/.gnupg"
+
+  deploy-pages:
+    name: Deploy APT repository to GitHub Pages
+    needs: cleanup
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages-deploy-${{ github.repository }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out gh-pages content
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          ref: gh-pages
+          persist-credentials: false
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0, Node.js 24
+
+      - name: Upload APT repository as Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0, internally Node.js 24
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1, Node.js 24
