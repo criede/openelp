@@ -13,6 +13,8 @@ packaging and an APT repository on GitHub Pages. See
 - Use currently maintained Node.js runtimes in all actions (check each
   action's `runs.using`), pin actions by commit SHA, and deploy GitHub
   Pages via the GitHub Actions source, never "Deploy from a branch".
+- Raise `.github/scripts/release-debian-revision` whenever the packaging
+  changes, so the release packages are rebuilt under a new version.
 - Before adding a package name to an `apt-get install` line, verify it
   exists for every target suite (packages.debian.org), rather than
   guessing.

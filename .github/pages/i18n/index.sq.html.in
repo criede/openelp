@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
+<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
 <title>Depoja APT e OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -100,7 +100,7 @@ instalim ekzistues nga <code>main</code> në <code>release</code>, ndrysho
 komponentin në <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, ekzekuto
 <code>sudo apt update</code>, pastaj instalo në mënyrë të qartë versionin release
 (zakonisht një kthim në version më të vjetër), p.sh.
-<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
 
 <h2>Rrjeti dhe muri mbrojtës</h2>
 <p>Klientët EchoLink lidhen me proxy-n përmes TCP në

@@ -12,7 +12,8 @@ set -euo pipefail
 #   daily    (default) Development build of this repository's source;
 #            version <x.y.z>[~<extra>]+daily<date>.<run>.<attempt>.g<sha>-1~<suite>.
 #   release  Build of an unmodified upstream release tag (UPSTREAM_TAG, e.g.
-#            "v0.9.3"); version <x.y.z>-1~<suite>.
+#            "v0.9.3"); version <x.y.z>-<revision>~<suite>, with the
+#            Debian revision from release-debian-revision.
 #
 # Mounts: /source (git checkout to build, read-only), /scripts (this
 # directory), /output (receives the package and its metadata).
@@ -84,7 +85,12 @@ if [[ "$BUILD_KIND" == release ]]; then
   fi
   # One upstream release maps to exactly one package version per suite,
   # built once and never rebuilt (see plan-release-builds.sh).
-  version="${base_version}-1~${codename}"
+  # The Debian revision is raised whenever the packaging changes, so the
+  # release packages get rebuilt with the new packaging under a new, higher
+  # version (the older ones stay in the pool unchanged).
+  revision=$(tr -d ' \r\n' < /scripts/release-debian-revision)
+  [[ "$revision" =~ ^[1-9][0-9]*$ ]]
+  version="${base_version}-${revision}~${codename}"
 else
   # A pre-release suffix ("dev" between releases) is turned into "~dev",
   # so daily builds of 0.9.4-dev sort above the 0.9.3 release and below

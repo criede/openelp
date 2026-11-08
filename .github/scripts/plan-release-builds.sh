@@ -83,11 +83,16 @@ if [[ "$RETRY_FAILED" != true ]]; then
   done
 fi
 
+# Debian revision of the release packages (shared with build-deb.sh); a
+# higher revision makes every release missing in that revision again.
+revision=$(tr -d ' \r\n' < "$(dirname "${BASH_SOURCE[0]}")/release-debian-revision")
+[[ "$revision" =~ ^[1-9][0-9]*$ ]]
+
 entries=()
 skipped=()
 for tag in "${tags[@]}"; do
   while IFS=$'\t' read -r suite arch target_json; do
-    deb="openelp_${tag#v}-1~${suite}_${arch}.deb"
+    deb="openelp_${tag#v}-${revision}~${suite}_${arch}.deb"
     [[ -n "${published[$deb]:-}" ]] && continue
     if [[ -n "${failed["$tag $suite $arch"]:-}" ]]; then
       skipped+=("$tag $suite/$arch")

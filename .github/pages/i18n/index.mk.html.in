@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
+<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
 <title>APT репозиториум на OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -101,7 +101,7 @@ journalctl -u openelp.service -f</code></pre>
 компонентата во <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, изврши
 <code>sudo apt update</code>, а потоа експлицитно инсталирај ја верзијата на изданието
 (обично тоа е враќање на постара верзија), на пр.
-<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
 
 <h2>Мрежа и заштитен ѕид</h2>
 <p>EchoLink клиентите се поврзуваат на проксито преку TCP на конфигурираната порта

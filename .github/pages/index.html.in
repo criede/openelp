@@ -100,7 +100,7 @@ existing installation from <code>main</code> to <code>release</code>, change
 the component in <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, run
 <code>sudo apt update</code>, then install the release version explicitly
 (usually a downgrade), e.g.
-<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
 
 <h2>Network and firewall</h2>
 <p>EchoLink clients connect to the proxy over TCP on the configured

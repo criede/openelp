@@ -204,7 +204,15 @@ published (non-draft, non-prerelease) `cottsay/openelp` release with a tag
   source changes are applied; only the build settings are the same as for
   the daily packages. The build checks that the tag matches the version
   declared in `CMakeLists.txt`.
-- **Version:** `<x.y.z>-1~<suite>`, e.g. `0.9.3-1~trixie`.
+- **Version:** `<x.y.z>-<revision>~<suite>`, e.g. `0.9.3-2~trixie`. The
+  Debian revision comes from `.github/scripts/release-debian-revision`.
+  Raise it whenever the packaging changes (build options, files, maintainer
+  scripts, the systemd drop-in): the planning step then finds every release
+  missing in the new revision and builds it again, so all kept releases get
+  the new packaging under a new, higher version, and `apt upgrade` installs
+  it. Packages of older revisions stay in the pool unchanged, so a given
+  version always means the same bits. Revision 1 was built before the
+  systemd hardening, revision 2 includes it.
 - **Publishing:** one GitHub release `release-<tag>` per upstream release
   (the highest is marked "Latest") holding the packages of all
   suites/architectures, and the APT repository's `release` component.
@@ -408,7 +416,7 @@ the values above.
 sudo sed -i 's/ main$/ release/' /etc/apt/sources.list.d/openelp-db9cr.list
 sudo apt update
 apt list -a openelp                       # shows the available versions
-sudo apt install openelp=0.9.3-1~trixie   # usually a downgrade
+sudo apt install openelp=0.9.3-2~trixie   # usually a downgrade
 ```
 
 and back:

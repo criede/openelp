@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
+<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
 <title>APT-репозиторий OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -100,7 +100,7 @@ journalctl -u openelp.service -f</code></pre>
 компонент в <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, выполни
 <code>sudo apt update</code>, а затем явно установи версию релиза
 (обычно это понижение версии), например
-<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
 
 <h2>Сеть и брандмауэр</h2>
 <p>Клиенты EchoLink подключаются к прокси по TCP на настроенный
