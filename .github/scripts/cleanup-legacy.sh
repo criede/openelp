@@ -174,7 +174,7 @@ for tag in "${rel_tags[@]}"; do
 	mapfile -t assets < <(
 		gh release view "$tag" --repo "$GH_REPO" --json assets \
 			--jq '.assets[].name' \
-		| grep -E '~(bookworm|trixie)_.*\.deb$' || true
+		| grep -E '[.~](bookworm|trixie)_.*\.deb$' || true
 	)
 	for asset in "${assets[@]}"; do
 		echo "Deleting legacy asset from ${tag}: $asset"
