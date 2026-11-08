@@ -1,6 +1,77 @@
 OpenELP, an Open Source EchoLink Proxy
 ======================================
 
+> [!IMPORTANT]
+> **About this repository: criede/openelp**
+>
+> This repository is an automatically tracking fork of the original OpenELP
+> project, [cottsay/openelp](https://github.com/cottsay/openelp). A scheduled
+> workflow merges upstream's `main` into this fork's `main` every day, and
+> every published upstream release is picked up automatically as well.
+>
+> Its purpose is building and publishing packages (`.deb`) of OpenELP.
+> OpenELP itself is not developed here; local changes are limited to what the
+> packaging needs and to the security changes listed below. Please report bugs
+> and feature requests for OpenELP itself to
+> [the upstream project](https://github.com/cottsay/openelp/issues).
+>
+> **Security changes in this fork:** besides the packaging, this fork adds
+> security fixes that mitigate vulnerabilities in SvxLink for SvxLink nodes
+> that reach the EchoLink network only through this proxy. The proxy drops the
+> offending packets from the Internet before forwarding them to its client:
+>
+> * **Malformed NDATA packets** (UDP 5198) — CVE-2026-73152 /
+>   GHSA-2m63-p9h9-p5rf: SvxLink parses EchoLink info/chat packets without
+>   validating their length or terminator (out-of-bounds read, crash, memory
+>   disclosure). Dropped: non-audio packets shorter than 7 bytes and NDATA
+>   packets without a NUL terminator after the start of their text.
+> * **RTCP SDES packets with an unsafe callsign** (UDP 5199) —
+>   GHSA-6w9x-486p-ggrj: SvxLink uses the remote callsign from SDES packets
+>   unsanitized, and ModuleEchoLink inserts it into TCL event strings (remote
+>   TCL command execution on the SvxLink host) and fixed-size buffers (stack
+>   buffer overflow in APRS status reporting). Dropped: packets whose callsign
+>   contains characters other than `A-Z a-z 0-9 - / * _` or is longer than 32
+>   characters — the same rules as SvxLink's own fix.
+>
+> Not reachable through OpenELP in the first place: the receive buffer
+> overflow in SvxLink's EchoLink proxy client (GHSA-6w9x-486p-ggrj), which
+> needs more than 16 kB in one proxy message; OpenELP sends at most 4 kB.
+>
+> Hardening of OpenELP itself: a 10 s timeout for client login (an idle
+> connection could otherwise block the proxy slot), a fixed heap overflow
+> with a long `RegistrationName`, and a systemd sandbox running the proxy as
+> the unprivileged user `openelp`.
+>
+> These mitigations are a stop-gap, **not a replacement for updating SvxLink
+> to 26.05.2 or newer**, which fixes the vulnerabilities themselves. They are
+> part of the `main` (daily) packages only; the `release` packages are built
+> from unmodified upstream source (the systemd sandbox is part of both).
+>
+> **Packages:** `openelp` for Debian and Raspberry Pi OS:
+>
+> * `arm64` — Raspberry Pi OS 64-bit, Debian 12 (bookworm) and 13 (trixie)
+> * `armhf` — Raspberry Pi OS 32-bit on every Raspberry Pi model (incl.
+>   Pi 1/Zero/Zero W), Debian armhf; bookworm and trixie
+> * `amd64` — Intel/AMD PCs and servers, 64-bit; bookworm and trixie
+> * `i386` — Intel/AMD PCs, 32-bit; bookworm only (Debian 13 no longer
+>   supports installing i386 systems)
+>
+> **Two ways to get them:**
+>
+> * **APT repository** (recommended, updates via `apt upgrade`):
+>   <https://criede.github.io/openelp/> — see the
+>   [quickstart](https://criede.github.io/openelp/#quickstart). Component
+>   `release`: the official upstream releases (0.9.3 and newer), built from
+>   the unmodified upstream source and kept permanently; component `main`:
+>   daily builds of this fork's `main`, including the security changes above.
+> * **GitHub Releases**: <https://github.com/criede/openelp/releases> —
+>   `release-<tag>` holds the packages of an upstream release,
+>   `daily-<version>` prereleases hold the daily builds; download the `.deb`
+>   file and install it with `sudo apt install ./openelp_*.deb`.
+>
+> Details on how the packages are built and published:
+> [UPSTREAM-SYNC.MD](.github/UPSTREAM-SYNC.MD).
+
 OpenELP is an open source EchoLink proxy for Linux and Windows. It aims to be
 efficient and maintain a small footprint, while still implementing all of the
 features present in the official EchoLink proxy.
@@ -56,14 +127,6 @@ Windows:
 Windows Installer:
 
     devenv openelp.sln /project PACKAGE /build
-
-Debian and Raspberry Pi OS packages
------------------------------------
-This fork publishes daily builds and packages of the upstream releases for
-Debian 12/13 and Raspberry Pi OS (amd64, arm64, armhf, i386) in an APT
-repository: <https://criede.github.io/openelp/> (installation instructions
-in many European languages). How the packages are built and published is
-described in [.github/UPSTREAM-SYNC.MD](.github/UPSTREAM-SYNC.MD).
 
 Resources
 ---------

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT-tároló</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -43,6 +43,17 @@ OpenELP-projekt naponta szinkronizált forkja, helyi csomagolással (ez az APT-t
 esetleg további, arra épülő módosításokkal. Ha bármikor pontosan látni szeretnéd,
 miben tér el az upstreamtől, hasonlítsd össze élőben a GitHubon:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;e fork main ága</a>.</p>
+<p><strong>Biztonság:</strong> a <code>main</code> csomagok eldobják az EchoLink-hálózatból
+érkező azon csomagokat, amelyek ismert SvxLink-sebezhetőségeket váltanának ki,
+mielőtt azok elérnének egy ezt a proxyt használó SvxLink-csomópontot: a hibás NDATA
+info- és chatcsomagokat (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: összeomlás, memóriatartalom
+kiszivárgása), valamint azokat az RTCP SDES csomagokat, amelyekben a hívójel érvénytelen
+karaktereket vagy 32-nél több karaktert tartalmaz (GHSA-6w9x-486p-ggrj: TCL
+parancsinjektálás, puffertúlcsordulás). Emellett korlátozzák azt az időt is, amely alatt egy
+kliensnek be kell jelentkeznie. Ez csak átmeneti megoldás, nem helyettesíti az SvxLink
+26.05.2-es vagy újabb verzióra frissítését. A <code>release</code> csomagok a módosítatlan
+upstream forrást tartalmazzák e változtatások nélkül; mindkettő systemd-sandboxban
+futtatja a proxyt.</p>
 
 <h2 id="quickstart">Gyors kezdés</h2>
 <p>Futtasd a célrendszeren (a megfelelő kódnevet/architektúrát automatikusan felismeri):</p>
@@ -116,8 +127,9 @@ a <em>Setup &rarr; Connections &rarr; Proxy</em> menüpontban.</p>
 az aktív kliens-kapcsolatokat):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Az <code>/etc/openelp/ELProxy.conf</code> helyi módosításai
-frissítéskor megmaradnak (ez egy dpkg-konfigurációs fájl). A fájlt csak a root
-olvashatja, mivel a proxy jelszavát tartalmazza.</p>
+frissítéskor megmaradnak (ez egy dpkg-konfigurációs fájl). Mivel a proxy jelszavát tartalmazza, a fájlt csak a root
+és az <code>openelp</code> csoport olvashatja, amelynek nevében
+a szolgáltatás fut.</p>
 
 <h2>Régebbi verzió telepítése</h2>
 <p>A legutóbbi verziók a lecserélésük után még egy ideig elérhetők maradnak a poolban
@@ -134,7 +146,7 @@ sudo apt-mark hold openelp   # opcionális: megakadályozza, hogy az "apt upgrad
 <h2>Csomagok</h2>
 <table>
 <tr><th>Csomag</th><th>Tartalom</th></tr>
-<tr><td><code>openelp</code></td><td>Az <code>openelpd</code> proxydémon és könyvtára, a <code>/etc/openelp/ELProxy.conf</code> mintakonfiguráció, egy systemd-szolgáltatás (<code>openelp.service</code>, nincs automatikusan engedélyezve) és a kézikönyvoldal (man). A rendszer PCRE2-könyvtárával, a beépített MD5-implementációval (OpenSSL-függőség nélkül) és syslog-naplózással fordítva. Fejlesztői fejlécfájlokat nem tartalmaz.</td></tr>
+<tr><td><code>openelp</code></td><td>Az <code>openelpd</code> proxydémon és könyvtára, a <code>/etc/openelp/ELProxy.conf</code> mintakonfiguráció, egy systemd-szolgáltatás (<code>openelp.service</code>, nincs automatikusan engedélyezve; a nem privilegizált <code>openelp</code> felhasználóként fut systemd-sandboxban) és a kézikönyvoldal (man). A rendszer PCRE2-könyvtárával, a beépített MD5-implementációval (OpenSSL-függőség nélkül) és syslog-naplózással fordítva. Fejlesztői fejlécfájlokat nem tartalmaz.</td></tr>
 @@EXTRA_PACKAGE_ROWS@@</table>
 
 <h2>Támogatott rendszerek</h2>

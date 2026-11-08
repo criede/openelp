@@ -141,8 +141,48 @@ grep -qF '/etc/openelp/ELProxy.conf' "$pkgroot/usr/lib/systemd/system/openelp.se
 mapfile -t libs < <(find "$pkgroot/usr/lib/${multiarch}" -name 'libopenelp.so.*')
 test "${#libs[@]}" -gt 0
 
-# The configuration file holds the proxy password.
+# The configuration file holds the proxy password. Shipped root-only;
+# postinst makes it readable for the service group via dpkg-statoverride.
 chmod 0600 "$pkgroot/etc/openelp/ELProxy.conf"
+
+# Run the proxy unprivileged and sandboxed. A drop-in rather than an edit
+# of upstream's unit, so the unit stays as upstream ships it. No
+# PrivateDevices=: it would hide /dev/log, which openelpd -S logs to.
+# AF_NETLINK is needed by getaddrinfo() (registration). The bind
+# capability keeps configured ports below 1024 working as they did as root.
+install -d -m 0755 "$pkgroot/usr/lib/systemd/system/openelp.service.d"
+cat > "$pkgroot/usr/lib/systemd/system/openelp.service.d/hardening.conf" <<'EOF'
+# Shipped by the openelp package: run the proxy as an unprivileged user in
+# a systemd sandbox. Override in /etc/systemd/system/openelp.service.d/.
+[Service]
+User=openelp
+Group=openelp
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+DevicePolicy=closed
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+EOF
 if [[ -f "$pkgroot/usr/share/man/man1/openelpd.1" ]]; then
   gzip -9n "$pkgroot/usr/share/man/man1/openelpd.1"
 fi
@@ -182,7 +222,7 @@ Version: ${version}
 Architecture: ${arch}
 Maintainer: OpenELP DB9CR packaging <criede@users.noreply.github.com>
 Installed-Size: ${installed_size}
-Depends: ${shlibs_depends}
+Depends: ${shlibs_depends}, passwd
 Section: hamradio
 Priority: optional
 Homepage: https://github.com/cottsay/openelp
@@ -194,7 +234,8 @@ Description: Open Source EchoLink Proxy
  .
  This package contains the openelpd daemon, its library, a sample
  configuration in /etc/openelp/ELProxy.conf and a systemd service
- (openelp.service, not enabled automatically).
+ (openelp.service, not enabled automatically), which runs the proxy as
+ the unprivileged user "openelp" in a systemd sandbox.
 EOF
 ( cd "$pkgroot" && find etc -type f -printf '/%p\n' | sort ) > "$pkgroot/DEBIAN/conffiles"
 
@@ -203,6 +244,16 @@ cat > "$pkgroot/DEBIAN/postinst" <<'EOF'
 set -e
 if [ "$1" = configure ]; then
   ldconfig
+  # Unprivileged service user (see openelp.service.d/hardening.conf).
+  if ! getent passwd openelp >/dev/null; then
+    useradd --system --user-group --no-create-home --home-dir /nonexistent \
+      --shell /usr/sbin/nologin --comment "OpenELP EchoLink proxy" openelp
+  fi
+  # The configuration holds the proxy password: readable by root and the
+  # service group only. A statoverride survives package upgrades.
+  if ! dpkg-statoverride --list /etc/openelp/ELProxy.conf >/dev/null; then
+    dpkg-statoverride --update --add root openelp 0640 /etc/openelp/ELProxy.conf
+  fi
   if [ -d /run/systemd/system ]; then
     systemctl daemon-reload || true
     # Upgrades restart a running proxy so the new version takes effect.
@@ -228,8 +279,13 @@ if [ "$1" = remove ] || [ "$1" = purge ]; then
     systemctl daemon-reload || true
   fi
 fi
-if [ "$1" = purge ] && [ -x /usr/bin/deb-systemd-helper ]; then
-  deb-systemd-helper purge openelp.service >/dev/null || true
+if [ "$1" = purge ]; then
+  if dpkg-statoverride --list /etc/openelp/ELProxy.conf >/dev/null; then
+    dpkg-statoverride --remove /etc/openelp/ELProxy.conf
+  fi
+  if [ -x /usr/bin/deb-systemd-helper ]; then
+    deb-systemd-helper purge openelp.service >/dev/null || true
+  fi
 fi
 EOF
 chmod 0755 "$pkgroot/DEBIAN/postinst" "$pkgroot/DEBIAN/prerm" "$pkgroot/DEBIAN/postrm"
@@ -266,10 +322,17 @@ fi
 if [[ "$BUILD_KIND" == release ]]; then
   build_headline="Package build of the unmodified upstream OpenELP release ${UPSTREAM_TAG}
 (cottsay/openelp tag \`${UPSTREAM_TAG}\`). None of the criede/openelp source
-changes are included."
+changes are included, in particular none of its security mitigations for
+SvxLink (use the \`main\` component for those); the systemd hardening is
+part of the packaging and included."
   apt_component=release
 else
-  build_headline="Daily development build of criede/openelp, not a stable release."
+  build_headline="Daily development build of criede/openelp, not a stable release.
+
+Includes this fork's security changes: dropping packets that would trigger
+SvxLink vulnerabilities (malformed NDATA packets, CVE-2026-73152 /
+GHSA-2m63-p9h9-p5rf; RTCP SDES packets with an unsafe callsign,
+GHSA-6w9x-486p-ggrj) and an authorization timeout for proxy clients."
   apt_component=main
 fi
 cat > /output/BUILD-INFO.MD <<EOF
@@ -279,8 +342,10 @@ ${build_headline}
 - Package version: ${version}
 - Source commit: ${source_sha}
 - Build: ${GITHUB_RUN_NUMBER}, attempt ${GITHUB_RUN_ATTEMPT}
-- Contents: openelpd, libopenelp, /etc/openelp/ELProxy.conf (conffile),
-  openelp.service (systemd, not enabled automatically), man page.
+- Contents: openelpd, libopenelp, /etc/openelp/ELProxy.conf (conffile,
+  root:openelp 0640),
+  openelp.service (systemd, not enabled automatically; runs as the
+  unprivileged user openelp in a systemd sandbox), man page.
 - Built against the system PCRE2 (libpcre2-8); MD5 from the bundled
   implementation (no OpenSSL dependency); syslog logging enabled.
 - The upstream unit tests (ctest) passed in the build container.

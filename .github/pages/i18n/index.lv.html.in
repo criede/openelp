@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT repozitorijs</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -43,6 +43,17 @@ sākotnējā OpenELP projekta &mdash; ar vietēju pakošanu (šo APT repozitorij
 iespējams, citām papildu izmaiņām. Lai jebkurā brīdī precīzi redzētu, ar ko tas
 atšķiras no sākotnējā projekta, salīdzini tiešsaistē GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;šī atzarojuma main</a>.</p>
+<p><strong>Drošība:</strong> <code>main</code> pakotnes atmet no EchoLink tīkla
+saņemtās paketes, kas izraisītu zināmas SvxLink ievainojamības, pirms tās sasniedz
+SvxLink mezglu, kas izmanto šo starpniekserveri: nepareizi veidotas NDATA
+informācijas/tērzēšanas paketes (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: avārija,
+atmiņas satura atklāšana) un RTCP SDES paketes ar izsaukuma signālu, kas satur
+nederīgas rakstzīmes vai ir garāks par 32 rakstzīmēm (GHSA-6w9x-486p-ggrj: TCL
+komandu injekcija, bufera pārpildes). Tās arī ierobežo laiku, ko klients drīkst
+patērēt pieteikšanās procesam. Tas ir pagaidu risinājums, nevis aizstājējs SvxLink
+atjaunināšanai uz 26.05.2 vai jaunāku versiju. <code>release</code> pakotnes satur
+nemainītu sākotnējā projekta pirmkodu bez šīm izmaiņām; abas darbina
+starpniekserveri systemd smilškastē.</p>
 
 <h2 id="quickstart">Ātrā sākšana</h2>
 <p>Izpildi mērķa sistēmā (pareizais koda nosaukums/arhitektūra tiek noteikti automātiski):</p>
@@ -116,8 +127,8 @@ sadaļā <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktīvos klientu savienojumus):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Vietējās izmaiņas failā <code>/etc/openelp/ELProxy.conf</code>
-tiek saglabātas atjauninot (tas ir dpkg konfigurācijas fails). Failu var lasīt
-tikai root, jo tas satur starpniekservera paroli.</p>
+tiek saglabātas atjauninot (tas ir dpkg konfigurācijas fails). Tā kā fails
+satur starpniekservera paroli, to var lasīt tikai root un grupa <code>openelp</code>, ar kuras tiesībām darbojas serviss.</p>
 
 <h2>Vecākas versijas instalēšana</h2>
 <p>Nesenās versijas pēc aizstāšanas ar jaunākām vēl kādu laiku paliek pieejamas pool direktorijā
@@ -134,7 +145,7 @@ sudo apt-mark hold openelp   # neobligāti: neļauj "apt upgrade" to atkal atjau
 <h2>Pakotnes</h2>
 <table>
 <tr><th>Pakotne</th><th>Saturs</th></tr>
-<tr><td><code>openelp</code></td><td>Starpniekservera dēmons <code>openelpd</code> un tā bibliotēka, konfigurācijas paraugs <code>/etc/openelp/ELProxy.conf</code>, systemd serviss (<code>openelp.service</code>, netiek iespējots automātiski) un rokasgrāmatas lapa. Būvēts ar sistēmas PCRE2 bibliotēku, ar iekļauto MD5 implementāciju (bez OpenSSL atkarības) un žurnalēšanu caur syslog. Izstrādes galvenes faili nav iekļauti.</td></tr>
+<tr><td><code>openelp</code></td><td>Starpniekservera dēmons <code>openelpd</code> un tā bibliotēka, konfigurācijas paraugs <code>/etc/openelp/ELProxy.conf</code>, systemd serviss (<code>openelp.service</code>, netiek iespējots automātiski; darbojas kā nepriviliģēts lietotājs <code>openelp</code> systemd smilškastē) un rokasgrāmatas lapa. Būvēts ar sistēmas PCRE2 bibliotēku, ar iekļauto MD5 implementāciju (bez OpenSSL atkarības) un žurnalēšanu caur syslog. Izstrādes galvenes faili nav iekļauti.</td></tr>
 @@EXTRA_PACKAGE_ROWS@@</table>
 
 <h2>Atbalstītās sistēmas</h2>

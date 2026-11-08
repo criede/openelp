@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT-pakkasafn</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -44,6 +44,16 @@ OpenELP-verkefninu, með staðbundinni pökkun (þessu APT-pakkasafni) og
 hugsanlega frekari breytingum ofan á. Til að sjá nákvæmlega hvað er frábrugðið
 upprunaverkefninu hverju sinni geturðu borið saman í rauntíma á GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main í þessari kvísl</a>.</p>
+<p><strong>Öryggi:</strong> <code>main</code>-pakkarnir henda gagnapökkum
+frá EchoLink-netinu sem myndu virkja þekkta veikleika í SvxLink
+áður en þeir ná til SvxLink-hnúts sem notar þennan milliþjón: gölluðum NDATA-pökkum
+með upplýsingum/spjalli (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: hrun, leki úr
+minni) og RTCP SDES-pökkum með kallmerki sem inniheldur ógilda
+stafi eða fleiri en 32 stafi (GHSA-6w9x-486p-ggrj: innspýting TCL-skipana,
+yfirflæði biðminnis). Þeir takmarka einnig þann tíma sem biðlari má taka í að
+skrá sig inn. Þetta er bráðabirgðaúrræði og kemur ekki í stað þess að uppfæra SvxLink í
+26.05.2 eða nýrri. <code>release</code>-pakkarnir innihalda óbreyttan frumkóða
+upprunaverkefnisins án þessara breytinga; báðir keyra milliþjóninn í systemd-sandkassa.</p>
 
 <h2 id="quickstart">Fljótleg byrjun</h2>
 <p>Keyrðu á markkerfinu (rétt kóðaheiti/högun er greind sjálfkrafa):</p>
@@ -117,8 +127,8 @@ undir <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 virkar tengingar biðlara):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Staðbundnar breytingar á <code>/etc/openelp/ELProxy.conf</code> haldast
-við uppfærslur (þetta er dpkg-stillingaskrá). Aðeins root getur lesið
-skrána, þar sem hún inniheldur lykilorð milliþjónsins.</p>
+við uppfærslur (þetta er dpkg-stillingaskrá). Þar sem skráin
+inniheldur lykilorð milliþjónsins geta aðeins root og hópurinn <code>openelp</code>, sem þjónustan keyrir sem, lesið hana.</p>
 
 <h2>Uppsetning eldri útgáfu</h2>
 <p>Nýlegar útgáfur eru áfram aðgengilegar í pool um tíma eftir að
@@ -135,7 +145,7 @@ sudo apt-mark hold openelp   # valfrjálst: kemur í veg fyrir að "apt upgrade"
 <h2>Pakkar</h2>
 <table>
 <tr><th>Pakki</th><th>Inniheldur</th></tr>
-<tr><td><code>openelp</code></td><td>Milliþjónspúkann <code>openelpd</code> og aðgerðasafn hans, sýnidæmi um stillingar <code>/etc/openelp/ELProxy.conf</code>, systemd-þjónustu (<code>openelp.service</code>, ekki virkjuð sjálfkrafa) og handbókarsíðuna. Smíðað gegn PCRE2-aðgerðasafni kerfisins, með innbyggðri MD5-útfærslu (engin háð OpenSSL) og annálaskráningu um syslog. Hausskrár fyrir hugbúnaðarþróun fylgja ekki.</td></tr>
+<tr><td><code>openelp</code></td><td>Milliþjónspúkann <code>openelpd</code> og aðgerðasafn hans, sýnidæmi um stillingar <code>/etc/openelp/ELProxy.conf</code>, systemd-þjónustu (<code>openelp.service</code>, ekki virkjuð sjálfkrafa; keyrir sem notandinn <code>openelp</code> án sérréttinda í systemd-sandkassa) og handbókarsíðuna. Smíðað gegn PCRE2-aðgerðasafni kerfisins, með innbyggðri MD5-útfærslu (engin háð OpenSSL) og annálaskráningu um syslog. Hausskrár fyrir hugbúnaðarþróun fylgja ekki.</td></tr>
 @@EXTRA_PACKAGE_ROWS@@</table>
 
 <h2>Studd kerfi</h2>

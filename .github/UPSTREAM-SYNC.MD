@@ -120,18 +120,56 @@ token):
    `dpkg-deb --build` (not CPack: upstream's CPack setup targets the
    Windows installer, and assembling the package here works identically
    for unmodified upstream release tags). Headers and the unversioned
-   `libopenelp.so` symlink are dropped (runtime package only); the
-   configuration file is a dpkg conffile with mode `0600` (it holds the
-   proxy password); runtime dependencies come from `dpkg-shlibdeps`.
-   Maintainer scripts run `ldconfig`, `systemctl daemon-reload`, restart a
-   running proxy on upgrade and stop it on removal. The service is **not**
-   enabled automatically: the sample configuration must be edited first.
+   `libopenelp.so` symlink are dropped (runtime package only); runtime
+   dependencies come from `dpkg-shlibdeps`. Maintainer scripts run
+   `ldconfig`, `systemctl daemon-reload`, restart a running proxy on
+   upgrade and stop it on removal. The service is **not** enabled
+   automatically: the sample configuration must be edited first.
+5. Hardens the service: a drop-in
+   `/usr/lib/systemd/system/openelp.service.d/hardening.conf` (upstream's
+   unit itself stays unchanged) runs the proxy as the system user
+   `openelp`, created by `postinst`, with `NoNewPrivileges`,
+   `ProtectSystem=strict`, an empty capability set except
+   `CAP_NET_BIND_SERVICE` (so ports below 1024 keep working), restricted
+   address families, `MemoryDenyWriteExecute`, a `@system-service`
+   system call filter and further sandboxing options. `PrivateDevices` is
+   deliberately not used, since it would hide `/dev/log`, which
+   `openelpd -S` logs to. The configuration file is a dpkg conffile owned
+   `root:openelp` with mode `0640` (it holds the proxy password), set via
+   `dpkg-statoverride` so upgrades keep it; purge removes the override.
+   Override options in `/etc/systemd/system/openelp.service.d/` if needed.
+   This is packaging, so it applies to both components.
 
 `.github/scripts/test-deb.sh` then installs the package in a fresh
-container of the same suite and checks the files, the conffile, that all
-shared libraries resolve, that `openelpd` rejects the unconfigured sample
-configuration, that it starts and keeps running with a password set, and
-that the package removes cleanly.
+container of the same suite and checks the files, the conffile and its
+ownership/mode, the service user, the drop-in (`systemd-analyze verify`),
+that all shared libraries resolve, that `openelpd` rejects the unconfigured
+sample configuration, that it starts and keeps running **as the user
+`openelp`** with a password set in the real configuration file, and that
+the package removes and purges cleanly.
+
+### Security changes in this fork
+
+The `main` (daily) packages contain this fork's source changes on top of
+upstream; the `release` packages do not. They are listed, with what they
+mitigate, in the IMPORTANT box of the [README](../README.md):
+
+- `src/packet_filter.c` (unit test `test/test_packet_filter.c`): packets
+  from the EchoLink network that would trigger SvxLink vulnerabilities are
+  dropped before forwarding — malformed NDATA packets on UDP 5198
+  (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf) and RTCP SDES packets with an
+  unsafe callsign on UDP 5199 (GHSA-6w9x-486p-ggrj). Drops are logged at
+  INFO level, at most once per minute and kind per client, with a count
+  of suppressed drops.
+- `src/proxy.c`/`src/conn.c`: a 10 s receive timeout during client
+  authorization (`conn_set_timeout()` now acts on the connected socket).
+- `src/registration.c`: the registration suffix buffer accounts for
+  `RegistrationName` (heap overflow with names longer than about 50
+  characters).
+
+When SvxLink publishes further fixes for remotely reachable parsers, check
+whether OpenELP forwards the triggering packets and, if so, consider a
+matching filter; keep the README list and the start page in sync.
 
 ### Version scheme
 
@@ -351,7 +389,9 @@ journalctl -u openelp.service -f
 `openelpd` refuses to start while `Password` is still `notset`. OpenELP
 reads its configuration only at startup; apply changes with
 `sudo systemctl restart openelp.service`. Local changes to
-`/etc/openelp/ELProxy.conf` are kept on upgrades (dpkg conffile).
+`/etc/openelp/ELProxy.conf` are kept on upgrades (dpkg conffile). The
+service runs as the unprivileged user `openelp`, which can read the
+configuration via its group.
 
 Network: clients connect over TCP to `Port` (default 8100); the proxy
 must be reachable from the Internet on UDP 5198 and 5199 and needs

@@ -28,6 +28,12 @@ packaging and an APT repository on GitHub Pages. See
   other: informally, in the second person singular (German "du", French
   "tu", Spanish "tú", Dutch "je", Polish "ty", Russian "ты", ...), never
   with a formal or plural form (German "Sie", French "vous", ...).
+- The IMPORTANT box at the top of `README.md` lists every security change
+  of this fork and what it mitigates. Whenever a mitigation is added,
+  changed or removed (e.g. in `src/packet_filter.c`), update that list,
+  the "Security changes in this fork" section of
+  `.github/UPSTREAM-SYNC.MD` and the start page (with all translations)
+  in the same change.
 - Documentation under `.github/` and this file is written in English.
 - Upstream sources stay as close to upstream as possible; keep local
   source changes small and self-contained so merges stay easy.

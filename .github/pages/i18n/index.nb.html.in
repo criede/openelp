@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT-arkiv</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -44,6 +44,16 @@ opprinnelige OpenELP-prosjektet, med lokal pakking (dette APT-arkivet) og
 eventuelt flere endringer lagt oppå. For når som helst å se nøyaktig hva som
 skiller seg fra upstream, kan du sammenligne direkte på GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;denne forkens main</a>.</p>
+<p><strong>Sikkerhet:</strong> <code>main</code>-pakkene forkaster nettverkspakker
+fra EchoLink-nettverket som ville utløse kjente sårbarheter i SvxLink,
+før de når en SvxLink-node som bruker denne proxyen: feilformede NDATA-pakker
+med info/chat (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: krasj, lekkasje av
+minneinnhold) og RTCP SDES-pakker med et kallesignal som inneholder ugyldige
+tegn eller mer enn 32 tegn (GHSA-6w9x-486p-ggrj: injeksjon av TCL-kommandoer,
+bufferoverflyt). De begrenser også hvor lang tid en klient kan bruke på å
+logge inn. Dette er en midlertidig løsning, ikke en erstatning for å oppdatere SvxLink til
+26.05.2 eller nyere. <code>release</code>-pakkene inneholder uendret
+upstream-kildekode uten disse endringene; begge kjører proxyen i en systemd-sandkasse.</p>
 
 <h2 id="quickstart">Hurtigstart</h2>
 <p>Kjør på målsystemet (finner riktig kodenavn/arkitektur automatisk):</p>
@@ -117,8 +127,8 @@ under <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 fra aktive klientforbindelser):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Lokale endringer i <code>/etc/openelp/ELProxy.conf</code>
-beholdes ved oppgraderinger (det er en dpkg-konfigurasjonsfil). Filen kan bare
-leses av root, siden den inneholder proxypassordet.</p>
+beholdes ved oppgraderinger (det er en dpkg-konfigurasjonsfil). Siden filen
+inneholder proxypassordet, kan den bare leses av root og gruppen <code>openelp</code> som tjenesten kjører som.</p>
 
 <h2>Installere en eldre versjon</h2>
 <p>Nylige versjoner forblir tilgjengelige i poolen en stund etter at de er
@@ -135,7 +145,7 @@ sudo apt-mark hold openelp   # valgfritt: hindrer "apt upgrade" i å oppgradere 
 <h2>Pakker</h2>
 <table>
 <tr><th>Pakke</th><th>Innhold</th></tr>
-<tr><td><code>openelp</code></td><td>Proxydemonen <code>openelpd</code> og biblioteket dens, eksempelkonfigurasjonen <code>/etc/openelp/ELProxy.conf</code>, en systemd-tjeneste (<code>openelp.service</code>, aktiveres ikke automatisk) og manualsiden. Bygget mot systemets PCRE2-bibliotek, med den medfølgende MD5-implementasjonen (ingen avhengighet av OpenSSL) og logging via syslog. Utviklingsheaderfiler er ikke inkludert.</td></tr>
+<tr><td><code>openelp</code></td><td>Proxydemonen <code>openelpd</code> og biblioteket dens, eksempelkonfigurasjonen <code>/etc/openelp/ELProxy.conf</code>, en systemd-tjeneste (<code>openelp.service</code>, aktiveres ikke automatisk; kjører som den uprivilegerte brukeren <code>openelp</code> i en systemd-sandkasse) og manualsiden. Bygget mot systemets PCRE2-bibliotek, med den medfølgende MD5-implementasjonen (ingen avhengighet av OpenSSL) og logging via syslog. Utviklingsheaderfiler er ikke inkludert.</td></tr>
 @@EXTRA_PACKAGE_ROWS@@</table>
 
 <h2>Støttede systemer</h2>

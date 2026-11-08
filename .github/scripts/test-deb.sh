@@ -33,29 +33,48 @@ openelpd --version
 assert_libs_resolved /usr/bin/openelpd
 test -f /usr/lib/systemd/system/openelp.service
 test -f /etc/openelp/ELProxy.conf
-test "$(stat -c %a /etc/openelp/ELProxy.conf)" = 600
 grep -qx '/etc/openelp/ELProxy.conf' /var/lib/dpkg/info/openelp.conffiles
+
+# Unprivileged service user; configuration readable by its group only.
+getent passwd openelp
+test "$(stat -c '%U:%G %a' /etc/openelp/ELProxy.conf)" = 'root:openelp 640'
+dpkg-statoverride --list /etc/openelp/ELProxy.conf
+
+# Hardening drop-in, and the unit as systemd sees it with the drop-in.
+dropin=/usr/lib/systemd/system/openelp.service.d/hardening.conf
+grep -qx 'User=openelp' "$dropin"
+grep -qx 'NoNewPrivileges=yes' "$dropin"
+apt-get install -y --no-install-recommends systemd
+systemd-analyze verify /usr/lib/systemd/system/openelp.service
 
 # The packaged configuration must be rejected until a password is set
 # (upstream refuses the "notset" placeholder).
-if timeout 10 openelpd -F /etc/openelp/ELProxy.conf; then
+if timeout 10 setpriv --reuid=openelp --regid=openelp --clear-groups \
+    openelpd -F /etc/openelp/ELProxy.conf; then
   echo "openelpd accepted the unconfigured sample configuration" >&2
   exit 1
 fi
 
-# With a password set, the daemon must start and keep running until it is
-# stopped (exit status 124 = killed by timeout, i.e. it was still running).
-conf="$(mktemp)"
-sed 's/^Password=notset$/Password=smoketest/' /etc/openelp/ELProxy.conf > "$conf"
+# With a password set, the daemon must start as the service user, read the
+# real configuration file and keep running until it is stopped (exit
+# status 124 = killed by timeout, i.e. it was still running).
+sed -i 's/^Password=notset$/Password=smoketest/' /etc/openelp/ELProxy.conf
 set +e
-timeout 5 openelpd -F "$conf"
+timeout 5 setpriv --reuid=openelp --regid=openelp --clear-groups \
+  openelpd -F /etc/openelp/ELProxy.conf
 rc=$?
 set -e
 if [[ "$rc" -ne 124 ]]; then
-  echo "openelpd exited early with status ${rc}" >&2
+  echo "openelpd (as user openelp) exited early with status ${rc}" >&2
   exit 1
 fi
-rm -f "$conf"
 
+# Removal keeps the user and the (modified) configuration; purge removes
+# the statoverride.
 apt-get remove -y openelp
 test ! -e /usr/bin/openelpd
+apt-get purge -y openelp
+if dpkg-statoverride --list /etc/openelp/ELProxy.conf; then
+  echo "statoverride left behind after purge" >&2
+  exit 1
+fi

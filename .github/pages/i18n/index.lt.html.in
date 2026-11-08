@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT saugykla</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -43,6 +43,16 @@ pirminio OpenELP projekto, su vietiniu pakavimu (šia APT saugykla) ir,
 galbūt, kitais papildomais pakeitimais. Jei nori bet kuriuo metu tiksliai pamatyti, kuo
 ji skiriasi nuo pirminio projekto, palygink tiesiogiai GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;šios atšakos main</a>.</p>
+<p><strong>Saugumas:</strong> <code>main</code> paketai atmeta iš EchoLink tinklo
+gaunamus paketus, kurie išnaudotų žinomus SvxLink pažeidžiamumus, dar prieš jiems
+pasiekiant šį tarpinį serverį naudojantį SvxLink mazgą: netaisyklingus NDATA
+informacijos / pokalbių paketus (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: strigtis,
+atminties turinio atskleidimas) ir RTCP SDES paketus, kurių šaukinyje yra netinkamų
+simbolių arba daugiau nei 32 simboliai (GHSA-6w9x-486p-ggrj: TCL komandų injekcija,
+buferio perpildymai). Jie taip pat riboja laiką, per kurį klientas turi prisijungti.
+Tai laikina priemonė, o ne SvxLink atnaujinimo į 26.05.2 ar naujesnę versiją
+pakaitalas. <code>release</code> paketuose yra nepakeistas pirminio projekto
+išeitinis kodas be šių pakeitimų; abu paleidžia tarpinį serverį systemd smėlio dėžėje.</p>
 
 <h2 id="quickstart">Greita pradžia</h2>
 <p>Vykdyk tikslinėje sistemoje (tinkamas kodinis pavadinimas / architektūra nustatomi automatiškai):</p>
@@ -116,8 +126,8 @@ skiltyje <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktyvius klientų ryšius):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Vietiniai failo <code>/etc/openelp/ELProxy.conf</code> pakeitimai
-išsaugomi atnaujinant (tai dpkg konfigūracijos failas). Failą gali skaityti
-tik root, nes jame yra tarpinio serverio slaptažodis.</p>
+išsaugomi atnaujinant (tai dpkg konfigūracijos failas). Kadangi faile
+yra tarpinio serverio slaptažodis, jį gali skaityti tik root ir grupė <code>openelp</code>, kurios teisėmis veikia tarnyba.</p>
 
 <h2>Senesnės versijos diegimas</h2>
 <p>Naujausios versijos, jas pakeitus naujesnėmis, dar kurį laiką lieka prieinamos pool kataloge
@@ -134,7 +144,7 @@ sudo apt-mark hold openelp   # nebūtina: neleidžia "apt upgrade" vėl jo atnau
 <h2>Paketai</h2>
 <table>
 <tr><th>Paketas</th><th>Turinys</th></tr>
-<tr><td><code>openelp</code></td><td>Tarpinio serverio tarnybinė programa <code>openelpd</code> ir jos biblioteka, konfigūracijos pavyzdys <code>/etc/openelp/ELProxy.conf</code>, systemd tarnyba (<code>openelp.service</code>, automatiškai neįjungiama) ir žinyno puslapis. Sukompiliuota su sistemos PCRE2 biblioteka, pridėtu MD5 įgyvendinimu (be OpenSSL priklausomybės) ir registravimu per syslog. Kūrimo antraščių failai neįtraukti.</td></tr>
+<tr><td><code>openelp</code></td><td>Tarpinio serverio tarnybinė programa <code>openelpd</code> ir jos biblioteka, konfigūracijos pavyzdys <code>/etc/openelp/ELProxy.conf</code>, systemd tarnyba (<code>openelp.service</code>, automatiškai neįjungiama; veikia kaip neprivilegijuotas naudotojas <code>openelp</code> systemd smėlio dėžėje) ir žinyno puslapis. Sukompiliuota su sistemos PCRE2 biblioteka, pridėtu MD5 įgyvendinimu (be OpenSSL priklausomybės) ir registravimu per syslog. Kūrimo antraščių failai neįtraukti.</td></tr>
 @@EXTRA_PACKAGE_ROWS@@</table>
 
 <h2>Palaikomos sistemos</h2>
