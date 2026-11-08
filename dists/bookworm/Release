@@ -1,0 +1,48 @@
+Architectures: amd64 arm64 armhf i386
+Codename: bookworm
+Components: main
+Date: Sun, 08 Nov 2026 20:09:20 +0000
+Description: OpenELP DB9CR packages (bookworm)
+Label: OpenELP DB9CR
+Origin: OpenELP DB9CR
+Suite: bookworm
+MD5Sum:
+ 08b16ac29c6296e43f5109b119057201              218 Release
+ 324a95cd310708944aa87d77c907158e             1088 main/binary-amd64/Packages
+ 7270fc8e53e2d19b585011f201fcefc7              693 main/binary-amd64/Packages.gz
+ fdac2b4b972e8f780796179739085843             1088 main/binary-arm64/Packages
+ 884033b3ec8576c5f149586024f9e493              696 main/binary-arm64/Packages.gz
+ d551a42c07a9995ce433dfbb422df902             1088 main/binary-armhf/Packages
+ 265a1e7d23c3f880abfe2b355c5c8d02              699 main/binary-armhf/Packages.gz
+ bd65874a925fff711ba675bd04c6bb05             1086 main/binary-i386/Packages
+ 738d8fbc5bf5fde610b71d084e8d5d67              696 main/binary-i386/Packages.gz
+SHA1:
+ 04bfd38a8c09545aed5fb81bc1a1e1c6088410ad              218 Release
+ 039ddebac494dc55eb540c1f073b1c8f1c252582             1088 main/binary-amd64/Packages
+ f3af8dbe59d4bdf2a68d4c49b8edd32301eb272f              693 main/binary-amd64/Packages.gz
+ 52339f323d972ac500c14254714f9b0aacf02d77             1088 main/binary-arm64/Packages
+ e7136164b2a374962b9ed6a25b15cfcc9c139f4d              696 main/binary-arm64/Packages.gz
+ 39eff324a5b24581bae8e2830cb9fcf945e15f96             1088 main/binary-armhf/Packages
+ fa2d680342e8784b9eab3f9bddef3c0d79ba1032              699 main/binary-armhf/Packages.gz
+ e71bd770f4dc8f4ab7ce1c10b5331839797eb12f             1086 main/binary-i386/Packages
+ 4d0e0ef0695d54d270e754f3c2520d4e8c1ba06e              696 main/binary-i386/Packages.gz
+SHA256:
+ 37136c4951599be27e68ec325c35587ad53f09871db576b9c39aa02a112f2891              218 Release
+ a97790068720b4b095ec07a869644fded507ee9e28c4d52631fe7ce1fa942331             1088 main/binary-amd64/Packages
+ d458e5717bac347ed91d490d401555cb34ef2c14d58ad78d6381cffbd2c29ab1              693 main/binary-amd64/Packages.gz
+ a3d967c600115cc776bd531cec948eb8c8a09f88b7809de12f3142d00524059a             1088 main/binary-arm64/Packages
+ 7261a215bc15a523f7fd891cd5583113fcfb0942c976e3253f32454a24383218              696 main/binary-arm64/Packages.gz
+ eeeb0892e0b2054d33e4970cdd1e62082ffdb60a17c4a2e7aac9e192509ef62e             1088 main/binary-armhf/Packages
+ 5d7741240bba8c8764f9344af9fb73fd8da991ec129c463c98ac1d0cd3acf6b5              699 main/binary-armhf/Packages.gz
+ 63b8910109b9004653361802850b204029d4c0160afee9db8a551c7fd89e83c1             1086 main/binary-i386/Packages
+ 2f0868295ddddfb48bf9008b3aedcdec31cdcfad5d8454a35836c74615175bcd              696 main/binary-i386/Packages.gz
+SHA512:
+ 9b847dbf6c3201abf7dfc9259df098174aeafad811440945fdc0f020554d3be3896063bdda4c93e92119f28c032d2da9ef00d415e0e55214e5712ea755031617              218 Release
+ 1e43deda254c81bf624bd256ba386ee246a303f343ebf9fae0409b2465823fed9d25f482e83b2fd73f3074cac08afe131c2ad5b92aa5dd2f967b46c548b33da2             1088 main/binary-amd64/Packages
+ 7ac434162f1fb62f7069b50c6f994494a224c2e863b54328b9f58df49a52583902af776ee221b410e60f205ea793d1799956690179dde533f76a463f9601cc56              693 main/binary-amd64/Packages.gz
+ 3065d25cc682f491ddb63cd322cd8c1130d5b6ab60202fa40d6209d528ac44c7af8f4fcafcce7685f1bdc0bef268375a586f1f855cf035344187fc25c40b7c49             1088 main/binary-arm64/Packages
+ 7121ef1d21472a14f0d9db38e7353df825a84c4efc028a404ee4abe6781867cbca357a533281083487aa2735a4015e62713fa1993a539c3bc16e7d9215888069              696 main/binary-arm64/Packages.gz
+ 50c8667f380fde6e0bc845ecb28bebaa64d35002dfaef7c47b7be8f971fa6b1bede70cfa7c0e6ff505d2e9e2f8503c1c06f05ec0b191768c0763f0a37a4dcc22             1088 main/binary-armhf/Packages
+ 84879ca02f508e3938337864741008b77279456a2bb1ca0a5c87552a95a56591b774d6c1f476278308766123ddf1951b5f3430fb25e3ec78bf6790a2a22408a3              699 main/binary-armhf/Packages.gz
+ 99a1e16c6370858faf770c515aaf1c7cbb6d485a2549ee925fd9087ec99f638b867c65b7942463e011e45616691257c4bf3110e972f8cd801a87d68905f3d8cd             1086 main/binary-i386/Packages
+ f4e84dfdd35bcaeba4fc51e87fe3ba52fd2353335b71afef394e5c8fefb39be8e5e1ff913d0013cc35e12ec38114ddf75aa3e36e2fe9c024443833f35167b1c9              696 main/binary-i386/Packages.gz

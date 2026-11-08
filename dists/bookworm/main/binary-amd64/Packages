@@ -1,0 +1,24 @@
+Package: openelp
+Version: 0.9.4~dev+daily20261108.2.1.g6605f101cbc6-1~bookworm
+Architecture: amd64
+Maintainer: OpenELP DB9CR packaging <criede@users.noreply.github.com>
+Installed-Size: 160
+Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22)
+Filename: pool/bookworm/main/o/openelp/openelp_0.9.4~dev+daily20261108.2.1.g6605f101cbc6-1~bookworm_amd64.deb
+Size: 32632
+MD5sum: 0bd7d87b808939f1bda3c04cbdc96b6a
+SHA1: d50e3fd001938259df7de78f251f2ac68a182da5
+SHA256: 1862da56a54a5e791eecc77d4476ae43768dd9563e834c4371d3bc3c3340e3ea
+Section: hamradio
+Priority: optional
+Homepage: https://github.com/cottsay/openelp
+Description: Open Source EchoLink Proxy
+ OpenELP is an open source EchoLink proxy. It forwards the EchoLink UDP
+ traffic of a client (an EchoLink node such as SvxLink, or the EchoLink
+ PC client) over a single TCP connection, for clients that cannot accept
+ inbound UDP on ports 5198/5199 themselves.
+ .
+ This package contains the openelpd daemon, its library, a sample
+ configuration in /etc/openelp/ELProxy.conf and a systemd service
+ (openelp.service, not enabled automatically).
+
