@@ -700,7 +700,12 @@ int conn_set_timeout(struct conn_handle *conn, uint32_t msec)
 #endif
 
 	mutex_lock_shared(&priv->mutex);
-	ret = setsockopt(priv->sock_fd, SOL_SOCKET, SO_RCVTIMEO,
+	/* conn_priv::fd is the socket actually used for receiving: for an
+	 * accepted connection that is conn_priv::conn_fd, not the listening
+	 * conn_priv::sock_fd
+	 */
+	ret = setsockopt(priv->fd != INVALID_SOCKET ? priv->fd : priv->sock_fd,
+			 SOL_SOCKET, SO_RCVTIMEO,
 			 (const void *)&val, sizeof(val));
 	if (ret == SOCKET_ERROR)
 		ret = SOCK_ERRNO;

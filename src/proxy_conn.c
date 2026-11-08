@@ -54,6 +54,7 @@
 #include "conn.h"
 #include "digest.h"
 #include "mutex.h"
+#include "packet_filter.h"
 #include "proxy_conn.h"
 #include "proxy_msg.h"
 #include "rand.h"
@@ -73,9 +74,20 @@
 
 /*!
  * @brief Minimum number of seconds between log messages about dropped
- *        malformed NDATA packets for a single client
+ *        packets of one kind for a single client
  */
-#define NDATA_DROP_LOG_INTERVAL 60
+#define DROP_LOG_INTERVAL 60
+
+/*!
+ * @brief Rate limiting state for log messages about dropped packets
+ */
+struct drop_log {
+	/*! Time of the last log message, 0 if none was written yet */
+	time_t last;
+
+	/*! Number of drops not logged since the last log message */
+	unsigned long suppressed;
+};
 
 /*!
  * @brief Private data for an instance of a proxy client connection
@@ -130,22 +142,20 @@ static void forwarder_control(struct worker_handle *wh);
 static void forwarder_data(struct worker_handle *wh);
 
 /*!
- * @brief Determine if a UDP data packet is a malformed NDATA packet
+ * @brief Log a dropped packet, rate-limited per kind of packet
  *
- * Mitigation for CVE-2026-73152 (GHSA-2m63-p9h9-p5rf). svxlink <= 26.05.1
- * parses NDATA (info/chat) packets received on the EchoLink data port in
- * Qso::handleNonAudioPacket() without first validating their length or
- * the position of the NUL terminator, which leads to out-of-bounds reads
- * and crashes. A client that only talks to the EchoLink network through
- * this proxy can be protected by dropping such packets here, before they
- * are forwarded, even if the client itself has not been patched yet.
+ * Writes at most one message per ::DROP_LOG_INTERVAL seconds, including the
+ * number of drops suppressed since the previous message, so a flood of
+ * malicious packets cannot flood the log as well. With @p size 0, only
+ * reports the drops still suppressed (used when the forwarder ends).
  *
- * @param[in] buf Packet payload received from the remote host
- * @param[in] len Number of valid bytes in @p buf
- *
- * @returns 1 if the packet is a malformed NDATA packet, 0 otherwise
+ * @param[in] pc Proxy client connection the packet was meant for
+ * @param[in,out] dl Rate limiting state for this kind of packet
+ * @param[in] what Description of the dropped packet
+ * @param[in] size Size of the dropped packet in bytes, or 0
  */
-static int is_malformed_ndata_packet(const uint8_t *buf, int len);
+static void log_drop(struct proxy_conn_handle *pc, struct drop_log *dl,
+		     const char *what, int size);
 
 /*!
  * @brief Worker thread for forwarding TCP data
@@ -239,6 +249,7 @@ static void forwarder_control(struct worker_handle *wh)
 	uint8_t buf[CONN_BUFF_LEN] = { 0 };
 	struct proxy_msg *msg = (struct proxy_msg *)buf;
 	int ret;
+	struct drop_log sdes_drops = { 0, 0 };
 
 	msg->type = PROXY_MSG_TYPE_UDP_CONTROL;
 
@@ -250,6 +261,15 @@ static void forwarder_control(struct worker_handle *wh)
 		ret = conn_recv_any(&priv->conn_control, buf + sizeof(*msg),
 				    CONN_BUFF_LEN_HEADERLESS, &addr, NULL);
 		if (ret > 0) {
+			/* GHSA-6w9x-486p-ggrj (SDES callsign) mitigation */
+			if (packet_filter_sdes_unsafe(buf + sizeof(*msg),
+						      (size_t)ret)) {
+				log_drop(pc, &sdes_drops,
+					 "RTCP SDES packet(s) with an unsafe callsign (GHSA-6w9x-486p-ggrj mitigation)",
+					 ret);
+				continue;
+			}
+
 			msg->address = addr;
 			msg->size = ret;
 
@@ -267,6 +287,10 @@ static void forwarder_control(struct worker_handle *wh)
 			/* This is an error with the client connection */
 			if (ret < 0) {
 				conn_close(&priv->conn_control);
+
+				log_drop(pc, &sdes_drops,
+					 "RTCP SDES packet(s) with an unsafe callsign (GHSA-6w9x-486p-ggrj mitigation)",
+					 0);
 
 				proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 					  "Client '%s' UDP Control thread is returning due to a client connection error (%d): %s\n",
@@ -309,35 +333,40 @@ static void forwarder_control(struct worker_handle *wh)
 
 	conn_close(&priv->conn_control);
 
+	log_drop(pc, &sdes_drops,
+		 "RTCP SDES packet(s) with an unsafe callsign (GHSA-6w9x-486p-ggrj mitigation)",
+		 0);
+
 	proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 		  "Client '%s' UDP Control worker is returning cleanly\n",
 		  priv->callsign);
 }
 
-static int is_malformed_ndata_packet(const uint8_t *buf, int len)
+static void log_drop(struct proxy_conn_handle *pc, struct drop_log *dl,
+		     const char *what, int size)
 {
-	const uint8_t *null;
+	struct proxy_conn_priv *priv = pc->priv;
+	time_t now;
 
-	/* Audio packets are not affected */
-	if (len > 0 && buf[0] == 0xc0)
-		return 0;
+	if (size == 0) {
+		if (dl->suppressed > 0)
+			proxy_log(pc->ph, LOG_LEVEL_INFO,
+				  "Dropped %lu more %s for client '%s'\n",
+				  dl->suppressed, what, priv->callsign);
+		dl->suppressed = 0;
+		return;
+	}
 
-	/* Too short for prefix byte + "NDATA" + sub-type byte */
-	if (len < 7)
-		return 1;
-
-	/* Not an NDATA packet */
-	if (memcmp(buf + 1, "NDATA", 5) != 0)
-		return 0;
-
-	null = memchr(buf, 0, len);
-
-	/* Info packet: body starts at offset 7 */
-	if (buf[6] == 0x0d)
-		return null == NULL || null < buf + 7;
-
-	/* Chat packet: body starts at offset 6 */
-	return null == NULL || null < buf + 6;
+	now = time(NULL);
+	if (dl->last == 0 || difftime(now, dl->last) >= DROP_LOG_INTERVAL) {
+		proxy_log(pc->ph, LOG_LEVEL_INFO,
+			  "Dropping %s for client '%s' (%d bytes, %lu more suppressed since last message)\n",
+			  what, priv->callsign, size, dl->suppressed);
+		dl->last = now;
+		dl->suppressed = 0;
+	} else {
+		dl->suppressed++;
+	}
 }
 
 static void forwarder_data(struct worker_handle *wh)
@@ -349,9 +378,7 @@ static void forwarder_data(struct worker_handle *wh)
 	uint8_t buf[CONN_BUFF_LEN] = { 0 };
 	struct proxy_msg *msg = (struct proxy_msg *)buf;
 	int ret;
-	time_t now;
-	time_t last_drop_log = 0;
-	unsigned long drops_suppressed = 0;
+	struct drop_log ndata_drops = { 0, 0 };
 
 	msg->type = PROXY_MSG_TYPE_UDP_DATA;
 
@@ -363,21 +390,12 @@ static void forwarder_data(struct worker_handle *wh)
 		ret = conn_recv_any(&priv->conn_data, buf + sizeof(*msg),
 				    CONN_BUFF_LEN_HEADERLESS, &addr, NULL);
 		if (ret > 0) {
-			if (is_malformed_ndata_packet(buf + sizeof(*msg), ret)) {
-				/* Rate-limit logging so a flood of malformed
-				 * packets can't flood the log as well
-				 */
-				now = time(NULL);
-				if (last_drop_log == 0 ||
-				    difftime(now, last_drop_log) >= NDATA_DROP_LOG_INTERVAL) {
-					proxy_log(pc->ph, LOG_LEVEL_INFO,
-						  "Dropping malformed NDATA packet for client '%s' (%d bytes, CVE-2026-73152 mitigation, %lu more suppressed since last message)\n",
-						  priv->callsign, ret, drops_suppressed);
-					last_drop_log = now;
-					drops_suppressed = 0;
-				} else {
-					drops_suppressed++;
-				}
+			/* CVE-2026-73152 (GHSA-2m63-p9h9-p5rf) mitigation */
+			if (packet_filter_ndata_malformed(buf + sizeof(*msg),
+							  (size_t)ret)) {
+				log_drop(pc, &ndata_drops,
+					 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)",
+					 ret);
 				continue;
 			}
 
@@ -399,10 +417,9 @@ static void forwarder_data(struct worker_handle *wh)
 			if (ret < 0) {
 				conn_close(&priv->conn_data);
 
-				if (drops_suppressed > 0)
-					proxy_log(pc->ph, LOG_LEVEL_INFO,
-						  "Dropped %lu more malformed NDATA packets for client '%s' (CVE-2026-73152 mitigation)\n",
-						  drops_suppressed, priv->callsign);
+				log_drop(pc, &ndata_drops,
+					 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)",
+					 0);
 
 				proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 					  "Client '%s' UDP Data thread is returning due to a client connection error (%d): %s\n",
@@ -445,10 +462,8 @@ static void forwarder_data(struct worker_handle *wh)
 
 	conn_close(&priv->conn_data);
 
-	if (drops_suppressed > 0)
-		proxy_log(pc->ph, LOG_LEVEL_INFO,
-			  "Dropped %lu more malformed NDATA packets for client '%s' (CVE-2026-73152 mitigation)\n",
-			  drops_suppressed, priv->callsign);
+	log_drop(pc, &ndata_drops,
+		 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)", 0);
 
 	proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 		  "Client '%s' UDP Data worker is returning cleanly\n",

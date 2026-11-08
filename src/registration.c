@@ -189,7 +189,7 @@ static int send_report(struct registration_service_handle *rs,
 	/* Allocate a buffer we *know* will be big enough for the body */
 	message_body = malloc(strlen(priv->reg_name) +
 			      strlen(priv->reg_comment) +
-			      strlen(priv->reg_suffix) + 80);
+			      strlen(priv->reg_suffix) + 120);
 	if (message_body == NULL)
 		return -ENOMEM;
 
@@ -329,7 +329,13 @@ int registration_service_start(struct registration_service_handle *rs,
 
 	if (priv->reg_suffix != NULL)
 		free((void *)priv->reg_suffix);
-	reg_suffix = malloc(strlen(public_addr) + (2 * DIGEST_LEN) +
+	/* The buffer is first used for the digest input
+	 * (reg_name + public_addr + digest_salt), then for the suffix
+	 * ("&a=" public_addr "&d=" digest "&p=" port "&v=" version), so it
+	 * must be large enough for both.
+	 */
+	reg_suffix = malloc(strlen(priv->reg_name) + strlen(public_addr) +
+			    (2 * DIGEST_LEN) + sizeof(digest_salt) +
 			    sizeof(protocol_version) + 18);
 	if (reg_suffix == NULL) {
 		ret = -ENOMEM;

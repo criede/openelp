@@ -62,6 +62,15 @@
 #include "registration.h"
 #include "worker.h"
 
+/*!
+ * @brief Receive timeout during client authorization, in milliseconds
+ *
+ * Without it, a connection that never sends its credentials would occupy a
+ * client worker indefinitely, so a single idle TCP connection could keep
+ * the legitimate client from (re)connecting.
+ */
+#define PROXY_AUTH_TIMEOUT_MS 10000
+
 #if PROXY_PASS_RES_LEN != DIGEST_LEN
 #error Password Response Length Mismatch
 #endif
@@ -236,6 +245,11 @@ static int proxy_worker_authorize(struct proxy_worker *pw)
 	};
 
 
+	/* Bound the time a not yet authorized connection may take */
+	ret = conn_set_timeout(pw->conn_client, PROXY_AUTH_TIMEOUT_MS);
+	if (ret < 0)
+		return ret;
+
 	ret = get_nonce(&nonce);
 	if (ret < 0)
 		return ret;
@@ -300,7 +314,8 @@ static int proxy_worker_authorize(struct proxy_worker *pw)
 		return ret < 0 ? ret : -EACCES;
 	}
 
-	return 0;
+	/* Authorized clients may stay idle for a long time */
+	return conn_set_timeout(pw->conn_client, 0);
 }
 
 static void proxy_worker_drop(struct proxy_worker *pw)
