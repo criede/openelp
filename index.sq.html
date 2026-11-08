@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Depoja APT e OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -80,6 +80,17 @@ origjinal OpenELP, me paketim lokal (kjo depo APT) dhe
 ndoshta ndryshime të tjera të shtuara sipër. Për të parë saktësisht se çfarë ndryshon
 nga upstream në çdo moment, krahaso drejtpërdrejt në GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main i këtij fork-u</a>.</p>
+<p><strong>Siguria:</strong> paketat <code>main</code> hedhin poshtë paketat
+nga rrjeti EchoLink që do të shkaktonin dobësi të njohura të SvxLink
+para se të arrijnë te një nyje SvxLink që përdor këtë proxy: paketa NDATA
+informacioni/bisede të keqformuara (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: rrëzim, zbulim
+memorieje) dhe paketa RTCP SDES me një shenjë thirrjeje që përmban karaktere
+të pavlefshme ose më shumë se 32 karaktere (GHSA-6w9x-486p-ggrj: injektim komandash
+TCL, tejmbushje buffer-i). Ato kufizojnë gjithashtu kohën që mund të marrë një klient
+për t'u identifikuar. Kjo është një zgjidhje e përkohshme, jo zëvendësim i përditësimit të SvxLink në
+26.05.2 ose më të ri. Paketat <code>release</code> përmbajnë kodin burimor upstream
+të pandryshuar, pa këto ndryshime; të dyja e ekzekutojnë proxy-n në një sandbox
+systemd.</p>
 
 <h2 id="quickstart">Fillim i shpejtë</h2>
 <p>Ekzekuto në sistemin e synuar (emri i kodit/arkitektura e duhur zbulohet automatikisht):</p>
@@ -153,8 +164,9 @@ te <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktive të klientëve):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Ndryshimet lokale në <code>/etc/openelp/ELProxy.conf</code>
-ruhen gjatë përditësimeve (është një skedar konfigurimi i dpkg). Skedari mund të lexohet
-vetëm nga root, pasi përmban fjalëkalimin e proxy-t.</p>
+ruhen gjatë përditësimeve (është një skedar konfigurimi i dpkg). Meqë përmban fjalëkalimin e proxy-t, skedari
+mund të lexohet vetëm nga root dhe grupi <code>openelp</code> me të cilin
+funksionon shërbimi.</p>
 
 <h2>Instalimi i një versioni më të vjetër</h2>
 <p>Versionet e fundit mbeten të disponueshme në pool për njëfarë kohe pasi
@@ -171,7 +183,7 @@ sudo apt-mark hold openelp   # opsionale: ndalon "apt upgrade" ta përditësojë
 <h2>Paketat</h2>
 <table>
 <tr><th>Paketa</th><th>Përmban</th></tr>
-<tr><td><code>openelp</code></td><td>Demoni proxy <code>openelpd</code> dhe biblioteka e tij, konfigurimi shembull <code>/etc/openelp/ELProxy.conf</code>, një shërbim systemd (<code>openelp.service</code>, nuk aktivizohet automatikisht) dhe faqja e manualit. I ndërtuar me bibliotekën PCRE2 të sistemit, me implementimin e përfshirë të MD5 (pa varësi nga OpenSSL) dhe regjistrim përmes syslog. Skedarët header për zhvillim nuk përfshihen.</td></tr>
+<tr><td><code>openelp</code></td><td>Demoni proxy <code>openelpd</code> dhe biblioteka e tij, konfigurimi shembull <code>/etc/openelp/ELProxy.conf</code>, një shërbim systemd (<code>openelp.service</code>, nuk aktivizohet automatikisht; funksionon si përdoruesi pa privilegje <code>openelp</code> në një sandbox systemd) dhe faqja e manualit. I ndërtuar me bibliotekën PCRE2 të sistemit, me implementimin e përfshirë të MD5 (pa varësi nga OpenSSL) dhe regjistrim përmes syslog. Skedarët header për zhvillim nuk përfshihen.</td></tr>
 </table>
 
 <h2>Sistemet e mbështetura</h2>

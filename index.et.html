@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT-hoidla</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -80,6 +80,16 @@ algne OpenELP-i projekt, millele on lisatud kohalik pakendamine (see APT-hoidla)
 võimalik, et ka muid muudatusi. Et igal ajal täpselt näha, mille poolest see
 upstreamist erineb, võrdle otse GitHubis:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;selle forki main</a>.</p>
+<p><strong>Turvalisus:</strong> <code>main</code>-paketid hülgavad EchoLinki võrgust
+tulevad paketid, mis käivitaksid SvxLinki teadaolevaid haavatavusi, enne kui need
+jõuavad seda puhverserverit kasutava SvxLinki sõlmeni: vigased NDATA info-/vestluspaketid
+(CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: krahh, mälu sisu lekkimine) ning RTCP SDES
+paketid, mille kutsung sisaldab lubamatuid märke või on pikem kui 32 märki
+(GHSA-6w9x-486p-ggrj: TCL-käskude süstimine, puhvri ületäitumised). Samuti piiravad
+need aega, mille jooksul klient peab sisse logima. See on ajutine lahendus ega asenda
+SvxLinki uuendamist versioonile 26.05.2 või uuemale. <code>release</code>-paketid
+sisaldavad muutmata upstream-lähtekoodi ilma nende muudatusteta; mõlemad käitavad
+puhverserverit systemd liivakastis.</p>
 
 <h2 id="quickstart">Kiirjuhend</h2>
 <p>Käivita sihtsüsteemis (tuvastab õige koodnime/arhitektuuri automaatselt):</p>
@@ -153,8 +163,8 @@ menüüs <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktiivsed klientühendused):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Kohalikud muudatused failis <code>/etc/openelp/ELProxy.conf</code>
-säilivad uuendamisel (see on dpkg konfiguratsioonifail). Faili saab lugeda
-ainult root, kuna see sisaldab puhverserveri parooli.</p>
+säilivad uuendamisel (see on dpkg konfiguratsioonifail). Kuna fail
+sisaldab puhverserveri parooli, saavad seda lugeda ainult root ja grupp <code>openelp</code>, mille all teenus töötab.</p>
 
 <h2>Vanema versiooni paigaldamine</h2>
 <p>Hiljutised versioonid jäävad pärast uuemaga asendamist mõneks ajaks pooli
@@ -171,7 +181,7 @@ sudo apt-mark hold openelp   # valikuline: takistab "apt upgrade" käsul seda uu
 <h2>Paketid</h2>
 <table>
 <tr><th>Pakett</th><th>Sisu</th></tr>
-<tr><td><code>openelp</code></td><td>Puhverserveri deemon <code>openelpd</code> ja selle teek, näidiskonfiguratsioon <code>/etc/openelp/ELProxy.conf</code>, systemd teenus (<code>openelp.service</code>, ei lubata automaatselt) ja kasutusjuhendi lehekülg. Ehitatud süsteemi PCRE2 teegi vastu, kaasasoleva MD5 teostusega (ilma OpenSSL-i sõltuvuseta) ja syslogi kaudu logimisega. Arenduse päisefaile ei ole kaasas.</td></tr>
+<tr><td><code>openelp</code></td><td>Puhverserveri deemon <code>openelpd</code> ja selle teek, näidiskonfiguratsioon <code>/etc/openelp/ELProxy.conf</code>, systemd teenus (<code>openelp.service</code>, ei lubata automaatselt; töötab privileegideta kasutajana <code>openelp</code> systemd liivakastis) ja kasutusjuhendi lehekülg. Ehitatud süsteemi PCRE2 teegi vastu, kaasasoleva MD5 teostusega (ilma OpenSSL-i sõltuvuseta) ja syslogi kaudu logimisega. Arenduse päisefaile ei ole kaasas.</td></tr>
 </table>
 
 <h2>Toetatud süsteemid</h2>

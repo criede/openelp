@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Repositori APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ project OpenELP original, cun ina pachetaziun locala (quest repositori APT) e
 eventualmain ulteriuras midadas messas sur quai. Per vesair exactamain tge che sa distingua
 dad upstream en mintga mument, cumpareglia en temp real sin GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main upstream&nbsp;&hellip;&nbsp;main da quest fork</a>.</p>
+<p><strong>Segirezza:</strong> ils pachets <code>main</code> refusan pachets
+da la rait EchoLink che activassan nunsegirezzas enconuschentas da SvxLink,
+avant ch'els cuntanschan in nodi SvxLink che utilisescha quest proxy: pachets NDATA
+d'infurmaziun/chat malfurmads (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: collaps, divulgaziun
+da memoria) e pachets RTCP SDES cun in segn da clom che cuntegna caracters
+nunvalaivels u dapli che 32 caracters (GHSA-6w9x-486p-ggrj: injecziun da cumonds TCL,
+surcargas da buffer). Els limiteschan er il temp ch'in client po duvrar per
+s'annunziar. Quai è ina soluziun provisorica, betg in remplazzament d'actualisar
+SvxLink a 26.05.2 u pli nov. Ils pachets <code>release</code> cuntegnan il code da
+funtauna upstream betg modifitgà, senza questas midadas; omadus exequeschan il proxy
+en ina sandbox systemd.</p>
 
 <h2 id="quickstart">Entschatta svelta</h2>
 <p>Exequescha sin il sistem da destinaziun (il num da code e l'architectura correcta vegnan identifitgads automaticamain):</p>
@@ -154,8 +165,8 @@ sut <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 colliaziuns activas dals clients):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Midadas localas en <code>/etc/openelp/ELProxy.conf</code> vegnan
-mantegnidas tar actualisaziuns (i sa tracta d'ina datoteca da configuraziun dpkg). La datoteca po vegnir legida
-mo da root, perquai ch'ella cuntegna il pled-clav dal proxy.</p>
+mantegnidas tar actualisaziuns (i sa tracta d'ina datoteca da configuraziun dpkg). Cunquai ch'ella cuntegna il pled-clav dal proxy, po la datoteca
+vegnir legida mo da root e da la gruppa <code>openelp</code>, sut la quala il servetsch funcziuna.</p>
 
 <h2>Installar ina versiun pli veglia</h2>
 <p>Versiuns recentas restan disponiblas en il pool anc in temp suenter ch'ellas èn vegnidas
@@ -172,7 +183,7 @@ sudo apt-mark hold openelp   # facultativ: impedescha che "apt upgrade" al actua
 <h2>Pachets</h2>
 <table>
 <tr><th>Pachet</th><th>Cuntegn</th></tr>
-<tr><td><code>openelp</code></td><td>Il daemon da proxy <code>openelpd</code> e sia biblioteca, la configuraziun d'exempel <code>/etc/openelp/ELProxy.conf</code>, in servetsch systemd (<code>openelp.service</code>, betg activà automaticamain) e la pagina dal manual. Cumpilà cun la biblioteca PCRE2 dal sistem, cun l'implementaziun MD5 integrada (nagina dependenza dad OpenSSL) e protocollaziun via syslog. Ils headers da svilup n'èn betg inclus.</td></tr>
+<tr><td><code>openelp</code></td><td>Il daemon da proxy <code>openelpd</code> e sia biblioteca, la configuraziun d'exempel <code>/etc/openelp/ELProxy.conf</code>, in servetsch systemd (<code>openelp.service</code>, betg activà automaticamain; funcziuna sco utilisader senza privilegis <code>openelp</code> en ina sandbox systemd) e la pagina dal manual. Cumpilà cun la biblioteca PCRE2 dal sistem, cun l'implementaziun MD5 integrada (nagina dependenza dad OpenSSL) e protocollaziun via syslog. Ils headers da svilup n'èn betg inclus.</td></tr>
 </table>
 
 <h2>Sistems sustegnids</h2>

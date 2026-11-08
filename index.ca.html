@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Repositori APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ projecte OpenELP original, amb empaquetament local (aquest repositori APT) i
 possiblement altres canvis afegits a sobre. Per veure exactament en què difereix
 del projecte original en qualsevol moment, compara-ho en directe a GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main del projecte original&nbsp;&hellip;&nbsp;main d'aquest fork</a>.</p>
+<p><strong>Seguretat:</strong> els paquets <code>main</code> descarten els paquets
+de la xarxa EchoLink que activarien vulnerabilitats conegudes de SvxLink
+abans que arribin a un node SvxLink que utilitzi aquest proxy: paquets NDATA
+d'informació/xat mal formats (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: bloqueig, revelació
+de memòria) i paquets RTCP SDES amb un indicatiu que conté caràcters
+no vàlids o més de 32 caràcters (GHSA-6w9x-486p-ggrj: injecció d'ordres TCL,
+desbordaments de memòria intermèdia). També limiten el temps que un client pot trigar
+a iniciar la sessió. És una solució provisional, no un substitut de l'actualització
+de SvxLink a la 26.05.2 o posterior. Els paquets <code>release</code> contenen el codi
+font original sense modificar, sense aquests canvis; tots dos executen el proxy en un
+entorn aïllat (sandbox) de systemd.</p>
 
 <h2 id="quickstart">Inici ràpid</h2>
 <p>Executa-ho al sistema de destinació (detecta automàticament el nom en clau i l'arquitectura correctes):</p>
@@ -154,8 +165,8 @@ a <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 connexions de clients actives):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Els canvis locals a <code>/etc/openelp/ELProxy.conf</code> es
-conserven en les actualitzacions (és un fitxer de configuració de dpkg). El fitxer només el pot llegir
-root, ja que conté la contrasenya del proxy.</p>
+conserven en les actualitzacions (és un fitxer de configuració de dpkg). Com que conté la contrasenya del proxy, el fitxer només el poden
+llegir root i el grup <code>openelp</code> amb què s'executa el servei.</p>
 
 <h2>Instal·lar una versió anterior</h2>
 <p>Les versions recents continuen disponibles al pool durant un temps després de ser
@@ -172,7 +183,7 @@ sudo apt-mark hold openelp   # opcional: impedeix que "apt upgrade" el torni a a
 <h2>Paquets</h2>
 <table>
 <tr><th>Paquet</th><th>Contingut</th></tr>
-<tr><td><code>openelp</code></td><td>El dimoni proxy <code>openelpd</code> i la seva biblioteca, la configuració d'exemple <code>/etc/openelp/ELProxy.conf</code>, un servei systemd (<code>openelp.service</code>, no habilitat automàticament) i la pàgina de manual. Compilat amb la biblioteca PCRE2 del sistema, amb la implementació MD5 inclosa (sense dependència d'OpenSSL) i registre mitjançant syslog. No inclou les capçaleres de desenvolupament.</td></tr>
+<tr><td><code>openelp</code></td><td>El dimoni proxy <code>openelpd</code> i la seva biblioteca, la configuració d'exemple <code>/etc/openelp/ELProxy.conf</code>, un servei systemd (<code>openelp.service</code>, no habilitat automàticament; s'executa com l'usuari sense privilegis <code>openelp</code> en un entorn aïllat de systemd) i la pàgina de manual. Compilat amb la biblioteca PCRE2 del sistema, amb la implementació MD5 inclosa (sense dependència d'OpenSSL) i registre mitjançant syslog. No inclou les capçaleres de desenvolupament.</td></tr>
 </table>
 
 <h2>Sistemes compatibles</h2>

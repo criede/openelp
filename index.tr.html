@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT deposu</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ olarak eşitlenen bir fork'tur; üzerine yerel paketleme (bu APT deposu) ve
 muhtemelen başka değişiklikler eklenmiştir. Herhangi bir anda upstream'den tam olarak
 neyin farklı olduğunu görmek için GitHub üzerinde canlı karşılaştır:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;bu fork'un main dalı</a>.</p>
+<p><strong>Güvenlik:</strong> <code>main</code> paketleri, EchoLink ağından gelen
+ve bilinen SvxLink güvenlik açıklarını tetikleyecek paketleri, bu proxy'yi kullanan
+bir SvxLink düğümüne ulaşmadan önce düşürür: hatalı biçimlendirilmiş NDATA
+bilgi/sohbet paketleri (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: çökme, bellek
+sızıntısı) ve geçersiz karakterler ya da 32'den fazla karakter içeren bir çağrı işaretine
+sahip RTCP SDES paketleri (GHSA-6w9x-486p-ggrj: TCL komut
+enjeksiyonu, arabellek taşmaları). Ayrıca bir istemcinin oturum açmak için harcayabileceği
+süreyi de sınırlarlar. Bu geçici bir önlemdir; SvxLink'i
+26.05.2 veya daha yeni bir sürüme güncellemenin yerini tutmaz. <code>release</code> paketleri
+bu değişiklikler olmadan değiştirilmemiş upstream kaynağını içerir; her ikisi de proxy'yi bir systemd
+korumalı alanında (sandbox) çalıştırır.</p>
 
 <h2 id="quickstart">Hızlı başlangıç</h2>
 <p>Hedef sistemde çalıştır (doğru kod adı/mimari otomatik olarak algılanır):</p>
@@ -154,8 +165,9 @@ PROXY_PASSWORD=your-password</code></pre>
 (bu, etkin istemci bağlantılarını keser):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note"><code>/etc/openelp/ELProxy.conf</code> üzerindeki yerel değişiklikler
-yükseltmelerde korunur (bu bir dpkg yapılandırma dosyasıdır). Dosya, proxy parolasını
-içerdiği için yalnızca root tarafından okunabilir.</p>
+yükseltmelerde korunur (bu bir dpkg yapılandırma dosyasıdır). Proxy parolasını içerdiği için dosya
+yalnızca root ve servisin altında çalıştığı <code>openelp</code> grubu
+tarafından okunabilir.</p>
 
 <h2>Eski bir sürümü kurma</h2>
 <p>Yakın tarihli sürümler, yerlerini yenileri aldıktan sonra bir süre daha pool içinde
@@ -172,7 +184,7 @@ sudo apt-mark hold openelp   # isteğe bağlı: "apt upgrade"in onu yeniden yük
 <h2>Paketler</h2>
 <table>
 <tr><th>Paket</th><th>İçerik</th></tr>
-<tr><td><code>openelp</code></td><td><code>openelpd</code> proxy arka plan programı (daemon) ve kütüphanesi, örnek yapılandırma <code>/etc/openelp/ELProxy.conf</code>, bir systemd servisi (<code>openelp.service</code>, otomatik olarak etkinleştirilmez) ve kılavuz sayfası (man). Sistemin PCRE2 kütüphanesiyle, paketle gelen MD5 uygulamasıyla (OpenSSL bağımlılığı yok) ve syslog günlüklemesiyle derlenmiştir. Geliştirme başlık dosyaları dahil değildir.</td></tr>
+<tr><td><code>openelp</code></td><td><code>openelpd</code> proxy arka plan programı (daemon) ve kütüphanesi, örnek yapılandırma <code>/etc/openelp/ELProxy.conf</code>, bir systemd servisi (<code>openelp.service</code>, otomatik olarak etkinleştirilmez; ayrıcalıksız <code>openelp</code> kullanıcısı olarak bir systemd korumalı alanında (sandbox) çalışır) ve kılavuz sayfası (man). Sistemin PCRE2 kütüphanesiyle, paketle gelen MD5 uygulamasıyla (OpenSSL bağımlılığı yok) ve syslog günlüklemesiyle derlenmiştir. Geliştirme başlık dosyaları dahil değildir.</td></tr>
 </table>
 
 <h2>Desteklenen sistemler</h2>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Αποθετήριο APT του OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -80,6 +80,17 @@ EchoLink Proxy ανοιχτού κώδικα, για Raspberry Pi OS και Debi
 ενδεχομένως περαιτέρω αλλαγές από πάνω. Για να δεις ακριβώς τι διαφέρει
 από το upstream σε οποιαδήποτε χρονική στιγμή, κάνε ζωντανή σύγκριση στο GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main αυτού του fork</a>.</p>
+<p><strong>Ασφάλεια:</strong> τα πακέτα <code>main</code> απορρίπτουν πακέτα
+από το δίκτυο EchoLink που θα ενεργοποιούσαν γνωστές ευπάθειες του SvxLink
+πριν φτάσουν σε έναν κόμβο SvxLink που χρησιμοποιεί αυτό το proxy: κακοσχηματισμένα
+πακέτα πληροφοριών/συνομιλίας NDATA (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: κατάρρευση, διαρροή
+μνήμης) και πακέτα RTCP SDES με διακριτικό κλήσης που περιέχει μη έγκυρους
+χαρακτήρες ή περισσότερους από 32 χαρακτήρες (GHSA-6w9x-486p-ggrj: έγχυση εντολών
+TCL, υπερχειλίσεις buffer). Επίσης περιορίζουν τον χρόνο που μπορεί να χρειαστεί ένας πελάτης
+για να συνδεθεί. Πρόκειται για προσωρινό μέτρο, όχι για υποκατάστατο της ενημέρωσης του SvxLink σε
+26.05.2 ή νεότερη έκδοση. Τα πακέτα <code>release</code> περιέχουν τον αμετάβλητο
+πηγαίο κώδικα upstream χωρίς αυτές τις αλλαγές· και τα δύο εκτελούν το proxy σε sandbox
+του systemd.</p>
 
 <h2 id="quickstart">Γρήγορη εκκίνηση</h2>
 <p>Εκτέλεσε στο σύστημα-στόχο (η σωστή κωδική ονομασία/αρχιτεκτονική εντοπίζεται αυτόματα):</p>
@@ -153,8 +164,9 @@ PROXY_PASSWORD=your-password</code></pre>
 ενεργές συνδέσεις πελατών):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Οι τοπικές αλλαγές στο <code>/etc/openelp/ELProxy.conf</code>
-διατηρούνται κατά τις αναβαθμίσεις (είναι αρχείο ρυθμίσεων του dpkg). Το αρχείο είναι αναγνώσιμο
-μόνο από τον root, καθώς περιέχει τον κωδικό πρόσβασης του proxy.</p>
+διατηρούνται κατά τις αναβαθμίσεις (είναι αρχείο ρυθμίσεων του dpkg). Επειδή περιέχει τον κωδικό πρόσβασης του proxy, το αρχείο
+είναι αναγνώσιμο μόνο από τον root και την ομάδα <code>openelp</code> με την οποία
+εκτελείται η υπηρεσία.</p>
 
 <h2>Εγκατάσταση παλαιότερης έκδοσης</h2>
 <p>Οι πρόσφατες εκδόσεις παραμένουν διαθέσιμες στο pool για κάποιο διάστημα αφού
@@ -171,7 +183,7 @@ sudo apt-mark hold openelp   # προαιρετικά: εμποδίζει το "
 <h2>Πακέτα</h2>
 <table>
 <tr><th>Πακέτο</th><th>Περιεχόμενα</th></tr>
-<tr><td><code>openelp</code></td><td>Ο δαίμονας proxy <code>openelpd</code> και η βιβλιοθήκη του, το δείγμα ρυθμίσεων <code>/etc/openelp/ELProxy.conf</code>, μια υπηρεσία systemd (<code>openelp.service</code>, δεν ενεργοποιείται αυτόματα) και η σελίδα εγχειριδίου (man). Μεταγλωττισμένο με τη βιβλιοθήκη PCRE2 του συστήματος, με την ενσωματωμένη υλοποίηση MD5 (χωρίς εξάρτηση από το OpenSSL) και καταγραφή μέσω syslog. Δεν περιλαμβάνονται αρχεία κεφαλίδων ανάπτυξης.</td></tr>
+<tr><td><code>openelp</code></td><td>Ο δαίμονας proxy <code>openelpd</code> και η βιβλιοθήκη του, το δείγμα ρυθμίσεων <code>/etc/openelp/ELProxy.conf</code>, μια υπηρεσία systemd (<code>openelp.service</code>, δεν ενεργοποιείται αυτόματα· εκτελείται ως ο μη προνομιούχος χρήστης <code>openelp</code> σε sandbox του systemd) και η σελίδα εγχειριδίου (man). Μεταγλωττισμένο με τη βιβλιοθήκη PCRE2 του συστήματος, με την ενσωματωμένη υλοποίηση MD5 (χωρίς εξάρτηση από το OpenSSL) και καταγραφή μέσω syslog. Δεν περιλαμβάνονται αρχεία κεφαλίδων ανάπτυξης.</td></tr>
 </table>
 
 <h2>Υποστηριζόμενα συστήματα</h2>

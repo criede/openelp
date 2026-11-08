@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Repożitorju APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ oriġinali OpenELP, b'ippakkjar lokali (dan ir-repożitorju APT) u
 possibbilment bidliet oħra miżjuda fuqu. Biex tara eżattament x'inhu differenti
 mill-upstream fi kwalunkwe ħin, qabbel live fuq GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main ta' dan il-fork</a>.</p>
+<p><strong>Sigurtà:</strong> il-pakketti <code>main</code> jwaqqgħu pakketti
+min-netwerk EchoLink li jqanqlu vulnerabbiltajiet magħrufa ta' SvxLink
+qabel ma jilħqu node SvxLink li juża dan il-proxy: pakketti NDATA ta'
+informazzjoni/chat malformati (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: crash, żvelar
+tal-memorja) u pakketti RTCP SDES b'callsign li fih karattri
+invalidi jew aktar minn 32 karattru (GHSA-6w9x-486p-ggrj: injezzjoni ta' kmandi
+TCL, buffer overflows). Jillimitaw ukoll il-ħin li klijent jista' jieħu
+biex jidħol. Din hija soluzzjoni temporanja, mhux sostitut għall-aġġornament ta' SvxLink għal
+26.05.2 jew aktar ġdid. Il-pakketti <code>release</code> fihom sors upstream
+mhux mibdul mingħajr dawn il-bidliet; it-tnejn iħaddmu l-proxy f'sandbox ta'
+systemd.</p>
 
 <h2 id="quickstart">Bidu malajr</h2>
 <p>Ħaddem fuq is-sistema fil-mira (l-isem tal-kodiċi/l-arkitettura t-tajba jinstabu awtomatikament):</p>
@@ -154,8 +165,9 @@ taħt <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 l-konnessjonijiet attivi tal-klijenti):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Il-bidliet lokali f'<code>/etc/openelp/ELProxy.conf</code>
-jinżammu waqt l-aġġornamenti (huwa fajl ta' konfigurazzjoni ta' dpkg). Il-fajl jista' jinqara
-minn root biss, għax fih il-password tal-proxy.</p>
+jinżammu waqt l-aġġornamenti (huwa fajl ta' konfigurazzjoni ta' dpkg). Peress li fih il-password tal-proxy, il-fajl
+jista' jinqara biss minn root u mill-grupp <code>openelp</code> li bih
+jaħdem is-servizz.</p>
 
 <h2>Installazzjoni ta' verżjoni eqdem</h2>
 <p>Il-verżjonijiet riċenti jibqgħu disponibbli fil-pool għal xi żmien wara li
@@ -172,7 +184,7 @@ sudo apt-mark hold openelp   # fakultattiv: iwaqqaf lil "apt upgrade" milli jer�
 <h2>Pakketti</h2>
 <table>
 <tr><th>Pakkett</th><th>Fih</th></tr>
-<tr><td><code>openelp</code></td><td>Id-daemon tal-proxy <code>openelpd</code> u l-librerija tiegħu, il-konfigurazzjoni ta' eżempju <code>/etc/openelp/ELProxy.conf</code>, servizz systemd (<code>openelp.service</code>, mhux attivat awtomatikament) u l-paġna tal-manwal. Mibni mal-librerija PCRE2 tas-sistema, bl-implimentazzjoni MD5 inkluża (l-ebda dipendenza fuq OpenSSL) u logging permezz ta' syslog. Il-fajls header tal-iżvilupp mhumiex inklużi.</td></tr>
+<tr><td><code>openelp</code></td><td>Id-daemon tal-proxy <code>openelpd</code> u l-librerija tiegħu, il-konfigurazzjoni ta' eżempju <code>/etc/openelp/ELProxy.conf</code>, servizz systemd (<code>openelp.service</code>, mhux attivat awtomatikament; jaħdem bħala l-utent mingħajr privileġġi <code>openelp</code> f'sandbox ta' systemd) u l-paġna tal-manwal. Mibni mal-librerija PCRE2 tas-sistema, bl-implimentazzjoni MD5 inkluża (l-ebda dipendenza fuq OpenSSL) u logging permezz ta' syslog. Il-fajls header tal-iżvilupp mhumiex inklużi.</td></tr>
 </table>
 
 <h2>Sistemi appoġġjati</h2>

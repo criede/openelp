@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>APT repozitár OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ pôvodného projektu OpenELP, s vlastným balíčkovaním (tento APT repozitár)
 a prípadne ďalšími zmenami navrch. Ak chceš kedykoľvek presne zistiť, čím sa fork
 líši od materského projektu, porovnaj ich naživo na GitHube:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main materského projektu&nbsp;&hellip;&nbsp;main tohto forku</a>.</p>
+<p><strong>Bezpečnosť:</strong> balíky <code>main</code> zahadzujú pakety
+zo siete EchoLink, ktoré by vyvolali známe zraniteľnosti SvxLink, skôr než
+dorazia k uzlu SvxLink používajúcemu tento proxy: poškodené pakety NDATA
+typu info/chat (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: pád, únik obsahu
+pamäte) a pakety RTCP SDES s volacou značkou, ktorá obsahuje neplatné
+znaky alebo je dlhšia ako 32 znakov (GHSA-6w9x-486p-ggrj: injektáž príkazov
+TCL, pretečenie buffera). Obmedzujú aj čas, ktorý môže klient potrebovať
+na prihlásenie. Ide o dočasné riešenie, nie o náhradu aktualizácie SvxLink na
+verziu 26.05.2 alebo novšiu. Balíky <code>release</code> obsahujú nezmenený
+zdrojový kód materského projektu bez týchto zmien; oba spúšťajú proxy v sandboxe
+systemd.</p>
 
 <h2 id="quickstart">Rýchly štart</h2>
 <p>Spusti na cieľovom systéme (správne kódové meno a architektúra sa zistia automaticky):</p>
@@ -154,8 +165,9 @@ v <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktívne spojenia klientov):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Lokálne zmeny v <code>/etc/openelp/ELProxy.conf</code> sa
-pri aktualizáciách zachovajú (ide o konfiguračný súbor dpkg). Súbor môže čítať
-iba root, pretože obsahuje heslo proxy.</p>
+pri aktualizáciách zachovajú (ide o konfiguračný súbor dpkg). Keďže obsahuje
+heslo proxy, môže súbor čítať iba root a skupina
+<code>openelp</code>, pod ktorou služba beží.</p>
 
 <h2>Inštalácia staršej verzie</h2>
 <p>Nedávne verzie zostávajú v poole po nahradení novšou ešte nejaký čas dostupné
@@ -172,7 +184,7 @@ sudo apt-mark hold openelp   # voliteľné: zabráni tomu, aby ho "apt upgrade" 
 <h2>Balíky</h2>
 <table>
 <tr><th>Balík</th><th>Obsah</th></tr>
-<tr><td><code>openelp</code></td><td>Démon proxy <code>openelpd</code> a jeho knižnica, vzorová konfigurácia <code>/etc/openelp/ELProxy.conf</code>, služba systemd (<code>openelp.service</code>, nie je automaticky povolená) a manuálová stránka. Zostavený so systémovou knižnicou PCRE2, s pribalenou implementáciou MD5 (bez závislosti od OpenSSL) a protokolovaním cez syslog. Vývojové hlavičkové súbory nie sú súčasťou.</td></tr>
+<tr><td><code>openelp</code></td><td>Démon proxy <code>openelpd</code> a jeho knižnica, vzorová konfigurácia <code>/etc/openelp/ELProxy.conf</code>, služba systemd (<code>openelp.service</code>, nie je automaticky povolená; beží ako neprivilegovaný používateľ <code>openelp</code> v sandboxe systemd) a manuálová stránka. Zostavený so systémovou knižnicou PCRE2, s pribalenou implementáciou MD5 (bez závislosti od OpenSSL) a protokolovaním cez syslog. Vývojové hlavičkové súbory nie sú súčasťou.</td></tr>
 </table>
 
 <h2>Podporované systémy</h2>

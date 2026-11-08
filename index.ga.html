@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Stór APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ tionscadal bunaidh OpenELP, le pacáistiú áitiúil (an stór APT seo) agus
 b'fhéidir athruithe breise curtha leis. Chun a fheiceáil go díreach cad atá difriúil
 ón mbuntionscadal ag am ar bith, déan comparáid beo ar GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main an bhuntionscadail&nbsp;&hellip;&nbsp;main an fhorc seo</a>.</p>
+<p><strong>Slándáil:</strong> caitheann na pacáistí <code>main</code> uathu pacáistí
+ó líonra EchoLink a spreagfadh leochaileachtaí aitheanta SvxLink sula
+sroicheann siad nód SvxLink a úsáideann an seachfhreastalaí seo: pacáistí NDATA
+faisnéise/comhrá míchumtha (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: tuairteáil, nochtadh
+cuimhne) agus pacáistí RTCP SDES le glaoshíniú ina bhfuil carachtair neamhbhailí
+nó níos mó ná 32 carachtar (GHSA-6w9x-486p-ggrj: instealladh orduithe TCL,
+róshreafaí maoláin). Cuireann siad teorainn freisin leis an am a fhéadfaidh cliant
+a thógáil chun logáil isteach. Is réiteach sealadach é seo, ní ionadú ar SvxLink a
+nuashonrú go 26.05.2 nó níos nuaí. Tá cód foinseach neamhathraithe an bhuntionscadail
+gan na hathruithe seo sna pacáistí <code>release</code>; ritheann an dá cheann an
+seachfhreastalaí i mbosca gainimh systemd.</p>
 
 <h2 id="quickstart">Tús tapa</h2>
 <p>Rith ar an spriocchóras é (aimsítear an cód-ainm/an ailtireacht cheart go huathoibríoch):</p>
@@ -154,8 +165,8 @@ faoi <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 naisc ghníomhacha na gcliant):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Coinnítear athruithe áitiúla ar <code>/etc/openelp/ELProxy.conf</code>
-le linn uasghráduithe (is comhad cumraíochta dpkg é). Ní féidir ach le root
-an comhad a léamh, mar go bhfuil pasfhocal an tseachfhreastalaí ann.</p>
+le linn uasghráduithe (is comhad cumraíochta dpkg é). Ós rud é go bhfuil pasfhocal an tseachfhreastalaí ann, ní féidir
+ach le root agus leis an ngrúpa <code>openelp</code> a ritheann an tseirbhís faoi an comhad a léamh.</p>
 
 <h2>Leagan níos sine a shuiteáil</h2>
 <p>Fanann leaganacha le déanaí ar fáil sa pool ar feadh tamaill tar éis
@@ -172,7 +183,7 @@ sudo apt-mark hold openelp   # roghnach: cuireann sé cosc ar "apt upgrade" é a
 <h2>Pacáistí</h2>
 <table>
 <tr><th>Pacáiste</th><th>Ábhar</th></tr>
-<tr><td><code>openelp</code></td><td>An deamhan seachfhreastalaí <code>openelpd</code> agus a leabharlann, an chumraíocht shamplach <code>/etc/openelp/ELProxy.conf</code>, seirbhís systemd (<code>openelp.service</code>, nach gcumasaítear go huathoibríoch) agus an leathanach lámhleabhair. Tógtha in aghaidh leabharlann PCRE2 an chórais, leis an gcur i bhfeidhm MD5 atá san áireamh (gan spleáchas ar OpenSSL) agus logáil trí syslog. Níl ceanntásca forbartha san áireamh.</td></tr>
+<tr><td><code>openelp</code></td><td>An deamhan seachfhreastalaí <code>openelpd</code> agus a leabharlann, an chumraíocht shamplach <code>/etc/openelp/ELProxy.conf</code>, seirbhís systemd (<code>openelp.service</code>, nach gcumasaítear go huathoibríoch; ritheann sé mar an t-úsáideoir neamhphribhléideach <code>openelp</code> i mbosca gainimh systemd) agus an leathanach lámhleabhair. Tógtha in aghaidh leabharlann PCRE2 an chórais, leis an gcur i bhfeidhm MD5 atá san áireamh (gan spleáchas ar OpenSSL) agus logáil trí syslog. Níl ceanntásca forbartha san áireamh.</td></tr>
 </table>
 
 <h2>Córais a dtacaítear leo</h2>

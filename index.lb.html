@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT-Repository</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -80,6 +80,17 @@ ursprénglechen OpenELP-Projet, mat eegener Paketéierung (dëse APT-Repository)
 eventuell weidere Ännerungen doriwwer. Fir zu all Moment genee ze gesinn, wat sech
 vum Upstream ënnerscheet, vergläich live op GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">Upstream-main&nbsp;&hellip;&nbsp;main vun dësem Fork</a>.</p>
+<p><strong>Sécherheet:</strong> D'<code>main</code>-Pakete verwerfen Paketen
+aus dem EchoLink-Netz, déi bekannte SvxLink-Schwachstellen ausléise géifen,
+ier se e SvxLink-Knuet erreechen, deen dëse Proxy benotzt: fehlerhaft
+Info-/Chat-Pakete vum Typ NDATA (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: Ofstuerz,
+Offeleeë vu Späicherinhalt) a Pakete vum Typ RTCP SDES mat engem Ruffzeechen, dat
+ongëlteg Zeechen oder méi wéi 32 Zeechen enthält (GHSA-6w9x-486p-ggrj:
+TCL-Befeelsinjektioun, Bufferiwwerleef). Ausserdeem limitéiere se d'Zäit, déi e
+Client sech fir d'Umeldung huele kann. Dat ass eng Noutléisung a keen Ersatz fir en
+Update vu SvxLink op 26.05.2 oder méi nei. D'<code>release</code>-Pakete enthalen
+onverännerten Upstream-Quellcode ouni dës Ännerungen; béid bedreiwen de Proxy an
+enger systemd-Sandbox.</p>
 
 <h2 id="quickstart">Séier Ufank</h2>
 <p>Um Zilsystem ausféieren (Codename an Architektur ginn automatesch erkannt):</p>
@@ -153,8 +164,8 @@ PROXY_PASSWORD=your-password</code></pre>
 aktiv Client-Verbindungen ofgebrach):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Lokal Ännerungen un <code>/etc/openelp/ELProxy.conf</code> bleiwen
-bei Upgrades erhalen (et ass eng dpkg-Konfiguratiounsdatei). De Fichier ass just
-fir root liesbar, well en d'Proxy-Passwuert enthält.</p>
+bei Upgrades erhalen (et ass eng dpkg-Konfiguratiounsdatei). Well en d'Proxy-Passwuert enthält, ass de Fichier just fir
+root an d'Grupp <code>openelp</code> liesbar, ënner där de Service leeft.</p>
 
 <h2>Eng méi al Versioun installéieren</h2>
 <p>Rezent Versioune bleiwen nach eng Zäit am Pool disponibel, nodeems se
@@ -171,7 +182,7 @@ sudo apt-mark hold openelp   # optional: verhënnert, datt "apt upgrade" et erë
 <h2>Paketen</h2>
 <table>
 <tr><th>Paket</th><th>Inhalt</th></tr>
-<tr><td><code>openelp</code></td><td>De Proxy-Daemon <code>openelpd</code> a seng Bibliothéik, d'Beispillkonfiguratioun <code>/etc/openelp/ELProxy.conf</code>, e systemd-Service (<code>openelp.service</code>, net automatesch aktivéiert) an d'Manpage. Gebaut géint d'PCRE2-Bibliothéik vum System, mat der matgeliwwerter MD5-Implementéierung (keng Ofhängegkeet vun OpenSSL) a Protokolléierung iwwer syslog. Entwéckler-Header sinn net dobäi.</td></tr>
+<tr><td><code>openelp</code></td><td>De Proxy-Daemon <code>openelpd</code> a seng Bibliothéik, d'Beispillkonfiguratioun <code>/etc/openelp/ELProxy.conf</code>, e systemd-Service (<code>openelp.service</code>, net automatesch aktivéiert; leeft als onpriviligéierte Benotzer <code>openelp</code> an enger systemd-Sandbox) an d'Manpage. Gebaut géint d'PCRE2-Bibliothéik vum System, mat der matgeliwwerter MD5-Implementéierung (keng Ofhängegkeet vun OpenSSL) a Protokolléierung iwwer syslog. Entwéckler-Header sinn net dobäi.</td></tr>
 </table>
 
 <h2>Ënnerstëtzt Systemer</h2>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Repositório APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ projeto OpenELP original, com empacotamento local (este repositório APT) e
 possivelmente outras alterações adicionadas por cima. Para ver exatamente o que difere
 do projeto original em qualquer momento, compara em tempo real no GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main do projeto original&nbsp;&hellip;&nbsp;main deste fork</a>.</p>
+<p><strong>Segurança:</strong> os pacotes <code>main</code> descartam os pacotes
+da rede EchoLink que desencadeariam vulnerabilidades conhecidas do SvxLink
+antes de chegarem a um nó SvxLink que use este proxy: pacotes NDATA
+de info/chat malformados (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: falha, divulgação
+de memória) e pacotes RTCP SDES com um indicativo que contém caracteres
+inválidos ou mais de 32 caracteres (GHSA-6w9x-486p-ggrj: injeção de comandos TCL,
+transbordos de buffer). Também limitam o tempo que um cliente pode demorar
+a iniciar sessão. É uma solução provisória, não um substituto da atualização do
+SvxLink para a 26.05.2 ou posterior. Os pacotes <code>release</code> contêm o
+código-fonte original não modificado, sem estas alterações; ambos executam o proxy
+numa sandbox do systemd.</p>
 
 <h2 id="quickstart">Início rápido</h2>
 <p>Executa no sistema de destino (deteta automaticamente o nome de código e a arquitetura corretos):</p>
@@ -154,8 +165,8 @@ em <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 ligações de clientes ativas):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">As alterações locais a <code>/etc/openelp/ELProxy.conf</code> são
-mantidas nas atualizações (é um ficheiro de configuração do dpkg). O ficheiro só pode ser lido
-pelo root, uma vez que contém a palavra-passe do proxy.</p>
+mantidas nas atualizações (é um ficheiro de configuração do dpkg). Como contém a palavra-passe do proxy, o ficheiro só pode ser
+lido pelo root e pelo grupo <code>openelp</code> com que o serviço é executado.</p>
 
 <h2>Instalar uma versão mais antiga</h2>
 <p>As versões recentes continuam disponíveis no pool durante algum tempo depois de serem
@@ -172,7 +183,7 @@ sudo apt-mark hold openelp   # opcional: impede que "apt upgrade" o volte a atua
 <h2>Pacotes</h2>
 <table>
 <tr><th>Pacote</th><th>Conteúdo</th></tr>
-<tr><td><code>openelp</code></td><td>O daemon proxy <code>openelpd</code> e a sua biblioteca, a configuração de exemplo <code>/etc/openelp/ELProxy.conf</code>, um serviço systemd (<code>openelp.service</code>, não ativado automaticamente) e a página de manual. Compilado com a biblioteca PCRE2 do sistema, com a implementação MD5 incluída (sem dependência do OpenSSL) e registo via syslog. Os cabeçalhos de desenvolvimento não estão incluídos.</td></tr>
+<tr><td><code>openelp</code></td><td>O daemon proxy <code>openelpd</code> e a sua biblioteca, a configuração de exemplo <code>/etc/openelp/ELProxy.conf</code>, um serviço systemd (<code>openelp.service</code>, não ativado automaticamente; é executado como o utilizador sem privilégios <code>openelp</code> numa sandbox do systemd) e a página de manual. Compilado com a biblioteca PCRE2 do sistema, com a implementação MD5 incluída (sem dependência do OpenSSL) e registo via syslog. Os cabeçalhos de desenvolvimento não estão incluídos.</td></tr>
 </table>
 
 <h2>Sistemas suportados</h2>

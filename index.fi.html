@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR -APT-pakettivarasto</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -80,6 +80,17 @@ alkuperäinen OpenELP-projekti; sen päälle on lisätty paikallinen paketointi 
 APT-pakettivarasto) ja mahdollisesti muita muutoksia. Jos haluat nähdä milloin tahansa
 tarkalleen, mikä eroaa upstreamista, vertaa suoraan GitHubissa:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;tämän forkin main</a>.</p>
+<p><strong>Tietoturva:</strong> <code>main</code>-paketit hylkäävät EchoLink-verkosta
+tulevat paketit, jotka laukaisisivat SvxLinkin tunnettuja haavoittuvuuksia,
+ennen kuin ne saavuttavat tätä välityspalvelinta käyttävän SvxLink-solmun:
+virheellisesti muodostetut NDATA-info-/chat-paketit (CVE-2026-73152 /
+GHSA-2m63-p9h9-p5rf: kaatuminen, muistin sisällön paljastuminen) sekä
+RTCP SDES -paketit, joiden kutsumerkissä on virheellisiä merkkejä tai yli 32 merkkiä
+(GHSA-6w9x-486p-ggrj: TCL-komentojen injektointi, puskurin ylivuodot). Ne myös
+rajoittavat aikaa, jonka asiakasohjelma saa käyttää sisäänkirjautumiseen. Tämä on
+väliaikainen ratkaisu eikä korvaa SvxLinkin päivittämistä versioon 26.05.2 tai
+uudempaan. <code>release</code>-paketit sisältävät muuttamattoman upstream-lähdekoodin
+ilman näitä muutoksia; molemmat ajavat välityspalvelinta systemd-hiekkalaatikossa.</p>
 
 <h2 id="quickstart">Pika-aloitus</h2>
 <p>Suorita kohdejärjestelmässä (tunnistaa oikean koodinimen/arkkitehtuurin automaattisesti):</p>
@@ -153,8 +164,8 @@ kohdassa <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktiiviset asiakasyhteydet):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Paikalliset muutokset tiedostoon <code>/etc/openelp/ELProxy.conf</code>
-säilyvät päivityksissä (se on dpkg:n asetustiedosto). Tiedostoa voi lukea
-vain root, koska se sisältää välityspalvelimen salasanan.</p>
+säilyvät päivityksissä (se on dpkg:n asetustiedosto). Koska tiedosto
+sisältää välityspalvelimen salasanan, sitä voivat lukea vain root ja ryhmä <code>openelp</code>, jonka oikeuksilla palvelu toimii.</p>
 
 <h2>Vanhemman version asentaminen</h2>
 <p>Viimeaikaiset versiot pysyvät saatavilla poolissa jonkin aikaa sen jälkeen, kun
@@ -171,7 +182,7 @@ sudo apt-mark hold openelp   # valinnainen: estää "apt upgrade" -komentoa päi
 <h2>Paketit</h2>
 <table>
 <tr><th>Paketti</th><th>Sisältö</th></tr>
-<tr><td><code>openelp</code></td><td>Välityspalvelimen taustaprosessi <code>openelpd</code> ja sen kirjasto, esimerkkiasetukset <code>/etc/openelp/ELProxy.conf</code>, systemd-palvelu (<code>openelp.service</code>, ei oteta käyttöön automaattisesti) ja man-sivu. Käännetty järjestelmän PCRE2-kirjastoa vasten, mukana tulevalla MD5-toteutuksella (ei riippuvuutta OpenSSL:ään) ja syslog-lokituksella. Kehitysotsaketiedostoja ei ole mukana.</td></tr>
+<tr><td><code>openelp</code></td><td>Välityspalvelimen taustaprosessi <code>openelpd</code> ja sen kirjasto, esimerkkiasetukset <code>/etc/openelp/ELProxy.conf</code>, systemd-palvelu (<code>openelp.service</code>, ei oteta käyttöön automaattisesti; toimii etuoikeudettomana käyttäjänä <code>openelp</code> systemd-hiekkalaatikossa) ja man-sivu. Käännetty järjestelmän PCRE2-kirjastoa vasten, mukana tulevalla MD5-toteutuksella (ei riippuvuutta OpenSSL:ään) ja syslog-lokituksella. Kehitysotsaketiedostoja ei ole mukana.</td></tr>
 </table>
 
 <h2>Tuetut järjestelmät</h2>

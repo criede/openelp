@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>Repozitorij APT OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ izvirnega projekta OpenELP, z lastnim pakiranjem (ta repozitorij APT)
 in morebitnimi nadaljnjimi spremembami. Če želiš kadar koli natančno videti,
 v čem se fork razlikuje od izvornega projekta, ju primerjaj v živo na GitHubu:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main izvornega projekta&nbsp;&hellip;&nbsp;main tega forka</a>.</p>
+<p><strong>Varnost:</strong> paketi <code>main</code> zavržejo pakete
+iz omrežja EchoLink, ki bi sprožili znane ranljivosti SvxLink, preden
+dosežejo vozlišče SvxLink, ki uporablja ta proxy: pokvarjene pakete NDATA
+vrste info/chat (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: sesutje, razkritje
+pomnilnika) in pakete RTCP SDES s klicnim znakom, ki vsebuje neveljavne
+znake ali je daljši od 32 znakov (GHSA-6w9x-486p-ggrj: vrivanje ukazov
+TCL, prekoračitve medpomnilnika). Omejijo tudi čas, ki ga ima odjemalec
+za prijavo. To je začasna rešitev, ne nadomestilo za posodobitev SvxLink na
+različico 26.05.2 ali novejšo. Paketi <code>release</code> vsebujejo nespremenjeno
+izvorno kodo izvornega projekta brez teh sprememb; oboji poganjajo proxy v peskovniku
+systemd.</p>
 
 <h2 id="quickstart">Hiter začetek</h2>
 <p>Zaženi v ciljnem sistemu (pravilno kodno ime in arhitektura se zaznata samodejno):</p>
@@ -154,8 +165,9 @@ v <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 aktivne povezave odjemalcev):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Lokalne spremembe v <code>/etc/openelp/ELProxy.conf</code> se
-pri nadgradnjah ohranijo (gre za konfiguracijsko datoteko dpkg). Datoteko lahko
-bere le root, saj vsebuje geslo proxyja.</p>
+pri nadgradnjah ohranijo (gre za konfiguracijsko datoteko dpkg). Ker vsebuje
+geslo proxyja, jo lahko bereta le root in skupina
+<code>openelp</code>, pod katero teče storitev.</p>
 
 <h2>Namestitev starejše različice</h2>
 <p>Nedavne različice ostanejo v bazenu (pool) na voljo še nekaj časa po zamenjavi
@@ -172,7 +184,7 @@ sudo apt-mark hold openelp   # neobvezno: prepreči, da bi ga "apt upgrade" znov
 <h2>Paketi</h2>
 <table>
 <tr><th>Paket</th><th>Vsebuje</th></tr>
-<tr><td><code>openelp</code></td><td>Proxy demon <code>openelpd</code> in njegovo knjižnico, vzorčno konfiguracijo <code>/etc/openelp/ELProxy.conf</code>, storitev systemd (<code>openelp.service</code>, ni samodejno omogočena) in stran priročnika man. Zgrajen s sistemsko knjižnico PCRE2, s priloženo implementacijo MD5 (brez odvisnosti od OpenSSL) in beleženjem prek sysloga. Razvojne glave niso vključene.</td></tr>
+<tr><td><code>openelp</code></td><td>Proxy demon <code>openelpd</code> in njegovo knjižnico, vzorčno konfiguracijo <code>/etc/openelp/ELProxy.conf</code>, storitev systemd (<code>openelp.service</code>, ni samodejno omogočena; teče kot neprivilegirani uporabnik <code>openelp</code> v peskovniku systemd) in stran priročnika man. Zgrajen s sistemsko knjižnico PCRE2, s priloženo implementacijo MD5 (brez odvisnosti od OpenSSL) in beleženjem prek sysloga. Razvojne glave niso vključene.</td></tr>
 </table>
 
 <h2>Podprti sistemi</h2>

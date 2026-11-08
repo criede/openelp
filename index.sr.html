@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
+<meta name="source-sha256" content="33efd8ef625b12aa540016695e5e38aa4f8cec6df032d74b2956f40e8c54c268">
 <title>OpenELP DB9CR APT репозиторијум</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -81,6 +81,17 @@ EchoLink проксија отвореног кода, за Raspberry Pi OS и D
 и евентуалним додатним изменама поврх њега. Ако у било ком тренутку желиш тачно
 да видиш шта се разликује у односу на upstream, упореди тренутно стање на GitHub-у:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main овог форка</a>.</p>
+<p><strong>Безбедност:</strong> пакети <code>main</code> одбацују пакете
+из EchoLink мреже који би активирали познате рањивости SvxLink-а пре него
+што стигну до SvxLink чвора који користи овај прокси: неисправне NDATA пакете
+типа info/chat (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: пад, откривање
+садржаја меморије) и RTCP SDES пакете са позивним знаком који садржи неважеће
+знакове или је дужи од 32 знака (GHSA-6w9x-486p-ggrj: убацивање TCL
+команди, прекорачења бафера). Такође ограничавају време које клијент сме
+да потроши на пријављивање. Ово је привремено решење, а не замена за ажурирање SvxLink-а на
+верзију 26.05.2 или новију. Пакети <code>release</code> садрже неизмењен
+upstream изворни код без ових измена; оба покрећу прокси у изолованом
+systemd окружењу (sandbox).</p>
 
 <h2 id="quickstart">Брзи почетак</h2>
 <p>Покрени на циљном систему (одговарајуће кодно име и архитектура се откривају аутоматски):</p>
@@ -154,8 +165,9 @@ PROXY_PASSWORD=your-password</code></pre>
 активне везе клијената):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Локалне измене у <code>/etc/openelp/ELProxy.conf</code>
-задржавају се при надоградњама (то је dpkg конфигурациона датотека). Датотеку
-може да чита само root, јер садржи лозинку проксија.</p>
+задржавају се при надоградњама (то је dpkg конфигурациона датотека). Пошто садржи
+лозинку проксија, датотеку могу да читају само root и група
+<code>openelp</code> под којом сервис ради.</p>
 
 <h2>Инсталирање старије верзије</h2>
 <p>Недавне верзије остају доступне у pool-у неко време након што их замене новије
@@ -172,7 +184,7 @@ sudo apt-mark hold openelp   # опционо: спречава да га "apt u
 <h2>Пакети</h2>
 <table>
 <tr><th>Пакет</th><th>Садржај</th></tr>
-<tr><td><code>openelp</code></td><td>Прокси демон <code>openelpd</code> и његова библиотека, пример конфигурације <code>/etc/openelp/ELProxy.conf</code>, systemd сервис (<code>openelp.service</code>, не омогућава се аутоматски) и страница приручника. Изграђен уз системску библиотеку PCRE2, са уграђеном имплементацијом MD5 (без зависности од OpenSSL-а) и бележењем преко syslog-а. Развојна заглавља нису укључена.</td></tr>
+<tr><td><code>openelp</code></td><td>Прокси демон <code>openelpd</code> и његова библиотека, пример конфигурације <code>/etc/openelp/ELProxy.conf</code>, systemd сервис (<code>openelp.service</code>, не омогућава се аутоматски; ради као непривилеговани корисник <code>openelp</code> у изолованом systemd окружењу) и страница приручника. Изграђен уз системску библиотеку PCRE2, са уграђеном имплементацијом MD5 (без зависности од OpenSSL-а) и бележењем преко syslog-а. Развојна заглавља нису укључена.</td></tr>
 </table>
 
 <h2>Подржани системи</h2>

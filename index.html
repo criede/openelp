@@ -80,6 +80,17 @@ original OpenELP project, with local packaging (this APT repository) and
 possibly further changes layered on top. To see exactly what is different
 from upstream at any point in time, compare live on GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;this fork's main</a>.</p>
+<p><strong>Security:</strong> the <code>main</code> packages drop packets
+from the EchoLink network that would trigger known SvxLink vulnerabilities
+before they reach a SvxLink node using this proxy: malformed NDATA
+info/chat packets (CVE-2026-73152 / GHSA-2m63-p9h9-p5rf: crash, memory
+disclosure) and RTCP SDES packets with a callsign containing invalid
+characters or more than 32 characters (GHSA-6w9x-486p-ggrj: TCL command
+injection, buffer overflows). They also limit the time a client may take
+to log in. This is a stop-gap, not a replacement for updating SvxLink to
+26.05.2 or newer. The <code>release</code> packages contain unmodified
+upstream source without these changes; both run the proxy in a systemd
+sandbox.</p>
 
 <h2 id="quickstart">Quickstart</h2>
 <p>Run on the target system (detects the right codename/architecture automatically):</p>
@@ -153,8 +164,9 @@ under <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
 active client connections):</p>
 <pre><code>sudo systemctl restart openelp.service</code></pre>
 <p class="note">Local changes to <code>/etc/openelp/ELProxy.conf</code> are
-kept on upgrades (it is a dpkg configuration file). The file is readable by
-root only, since it contains the proxy password.</p>
+kept on upgrades (it is a dpkg configuration file). Since it contains the
+proxy password, the file is readable only by root and the
+<code>openelp</code> group the service runs as.</p>
 
 <h2>Installing an older version</h2>
 <p>Recent versions stay available in the pool for a while after being
@@ -171,7 +183,7 @@ sudo apt-mark hold openelp   # optional: stop "apt upgrade" pulling it forward a
 <h2>Packages</h2>
 <table>
 <tr><th>Package</th><th>Contains</th></tr>
-<tr><td><code>openelp</code></td><td>The <code>openelpd</code> proxy daemon and its library, the sample configuration <code>/etc/openelp/ELProxy.conf</code>, a systemd service (<code>openelp.service</code>, not enabled automatically) and the manual page. Built against the system PCRE2 library, with the bundled MD5 implementation (no OpenSSL dependency) and syslog logging. Development headers are not included.</td></tr>
+<tr><td><code>openelp</code></td><td>The <code>openelpd</code> proxy daemon and its library, the sample configuration <code>/etc/openelp/ELProxy.conf</code>, a systemd service (<code>openelp.service</code>, not enabled automatically; runs as the unprivileged user <code>openelp</code> in a systemd sandbox) and the manual page. Built against the system PCRE2 library, with the bundled MD5 implementation (no OpenSSL dependency) and syslog logging. Development headers are not included.</td></tr>
 </table>
 
 <h2>Supported systems</h2>
