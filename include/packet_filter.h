@@ -100,4 +100,112 @@ int packet_filter_ndata_malformed(const uint8_t *buf, size_t len);
  */
 int packet_filter_sdes_unsafe(const uint8_t *buf, size_t len);
 
+/*!
+ * @brief Determine if a UDP data packet is not a well-formed EchoLink packet
+ *
+ * Accepted and therefore forwarded are audio packets (first byte 0xc0) with
+ * a complete 12-byte RTP header, at most 1024 payload bytes, and - unless
+ * the payload type (second byte) is 0x96 - at least four GSM frames, as well
+ * as NDATA packets that packet_filter_ndata_malformed() does not reject.
+ * Everything else is rejected.
+ *
+ * @param[in] buf Packet payload received from the remote host
+ * @param[in] len Number of valid bytes in @p buf
+ *
+ * @returns 1 if the packet should not be forwarded, 0 otherwise
+ */
+int packet_filter_data_invalid(const uint8_t *buf, size_t len);
+
+/*!
+ * @brief Determine if a UDP control packet is not a well-formed RTCP packet
+ *
+ * Accepted and therefore forwarded are RTCP packets of version 3 or 1,
+ * without padding in the first subpacket, beginning with a sender or
+ * receiver report and containing a source description or goodbye subpacket.
+ * Everything else is rejected.
+ *
+ * @param[in] buf Packet payload received from the remote host
+ * @param[in] len Number of valid bytes in @p buf
+ *
+ * @returns 1 if the packet should not be forwarded, 0 otherwise
+ */
+int packet_filter_control_invalid(const uint8_t *buf, size_t len);
+
+/*! Size of the line buffer used by the directory stream filter */
+#define PACKET_FILTER_DIR_LINE_LEN 256
+
+/*!
+ * @brief State of the directory listing filter for one TCP connection
+ *
+ * One instance belongs to a single TCP forwarding thread; it is not shared
+ * between threads and needs no locking.
+ */
+struct packet_filter_dir {
+	/*! Current parser state */
+	int state;
+
+	/*! Number of start marker bytes matched so far */
+	size_t start_len;
+
+	/*! Number of listing entries still expected */
+	long remaining;
+
+	/*! Buffer for the callsign or count line currently being read */
+	uint8_t line[PACKET_FILTER_DIR_LINE_LEN];
+
+	/*! Number of bytes in packet_filter_dir::line */
+	size_t line_len;
+
+	/*! Set when the callsign of the current entry is the "." marker */
+	int call_dot;
+};
+
+/*!
+ * @brief Initialize a directory listing filter
+ *
+ * @param[out] f Filter state to initialize
+ */
+void packet_filter_dir_init(struct packet_filter_dir *f);
+
+/*!
+ * @brief Pass a chunk of a directory server stream through the filter
+ *
+ * Reproduces the line structure EchoLink::Directory::handleCallList() reads
+ * (start marker, entry count, then four lines per entry) and rewrites the
+ * callsign line of every entry to contain only the characters valid in an
+ * EchoLink callsign (A-Z, a-z, 0-9, '-', '/', '*', '_'), truncated to
+ * ::PACKET_FILTER_MAX_CALLSIGN_LEN. The "." and " " marker lines and every
+ * other line are forwarded unchanged. Any input that does not match the
+ * expected structure switches the filter to passing the remaining bytes of
+ * the connection through verbatim.
+ *
+ * The callsign rewrite never lengthens a line, but a line begun in an
+ * earlier call may be emitted here, so @p out must have room for at least
+ * @p in_len + ::PACKET_FILTER_DIR_LINE_LEN bytes.
+ *
+ * @param[in,out] f Filter state for this connection
+ * @param[in] in Received bytes
+ * @param[in] in_len Number of bytes in @p in
+ * @param[out] out Buffer receiving the bytes to forward
+ *
+ * @returns Number of bytes written to @p out
+ */
+size_t packet_filter_dir_process(struct packet_filter_dir *f,
+				 const uint8_t *in, size_t in_len,
+				 uint8_t *out);
+
+/*!
+ * @brief Emit any bytes the filter is still holding back
+ *
+ * Called when the connection is closing so a partially received final line
+ * is not lost.
+ *
+ * @param[in,out] f Filter state for this connection
+ * @param[out] out Buffer receiving the bytes to forward (room for
+ *                 ::PACKET_FILTER_DIR_LINE_LEN bytes)
+ *
+ * @returns Number of bytes written to @p out
+ */
+size_t packet_filter_dir_flush(struct packet_filter_dir *f, uint8_t *out);
+
 #endif /* PACKET_FILTER_H_ */

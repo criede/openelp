@@ -42,6 +42,7 @@
  * @brief Filters for packets received from remote EchoLink hosts
  */
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "packet_filter.h"
@@ -54,6 +55,33 @@
 
 /*! SDES item type of the NAME item, which carries the EchoLink callsign */
 #define RTCP_SDES_NAME 2
+
+/*! RTCP packet type of a sender report */
+#define RTCP_SR 200
+
+/*! RTCP packet type of a receiver report */
+#define RTCP_RR 201
+
+/*! RTCP packet type of a goodbye (BYE) packet */
+#define RTCP_BYE 203
+
+/*! First byte value marking an EchoLink audio packet */
+#define AUDIO_PREFIX 0xc0
+
+/*! Payload type (second byte) of a Speex audio packet */
+#define AUDIO_PT_SPEEX 0x96
+
+/*! Size of the RTP header preceding the audio payload */
+#define AUDIO_HEADER_LEN 12
+
+/*! Maximum audio payload size accepted (VoicePacket::data) */
+#define AUDIO_MAX_PAYLOAD 1024
+
+/*! Number of GSM frames expected in a GSM audio packet */
+#define AUDIO_GSM_FRAMES 4
+
+/*! Size of one GSM frame */
+#define AUDIO_GSM_FRAME_LEN 33
 
 /*!
  * @brief Locate the NAME item of the first SDES subpacket in an RTCP packet
@@ -213,4 +241,236 @@ int packet_filter_sdes_unsafe(const uint8_t *buf, size_t len)
 	}
 
 	return 0;
+}
+
+int packet_filter_data_invalid(const uint8_t *buf, size_t len)
+{
+	/* Audio packets carry the 0xc0 prefix */
+	if (len > 0 && buf[0] == AUDIO_PREFIX) {
+		if (len < AUDIO_HEADER_LEN)
+			return 1;
+		if (len > (size_t)AUDIO_HEADER_LEN + AUDIO_MAX_PAYLOAD)
+			return 1;
+		/* Anything but Speex is decoded as a fixed number of GSM frames */
+		if (buf[1] != AUDIO_PT_SPEEX &&
+		    len < (size_t)AUDIO_HEADER_LEN +
+			  AUDIO_GSM_FRAMES * AUDIO_GSM_FRAME_LEN)
+			return 1;
+		return 0;
+	}
+
+	/* The only other packets that are acted on are NDATA packets */
+	if (len < 7)
+		return 1;
+	if (memcmp(buf + 1, "NDATA", 5) != 0)
+		return 1;
+
+	return packet_filter_ndata_malformed(buf, len);
+}
+
+int packet_filter_control_invalid(const uint8_t *buf, size_t len)
+{
+	size_t pos = 0;
+	int version;
+
+	if (len < 4)
+		return 1;
+
+	/* The first subpacket must be a report without padding */
+	version = (buf[0] >> 6) & 3;
+	if (version != 3 && version != 1)
+		return 1;
+	if ((buf[0] & 0x20) != 0)
+		return 1;
+	if (buf[1] != RTCP_SR && buf[1] != RTCP_RR)
+		return 1;
+
+	/* Forward only if an SDES or BYE subpacket is present */
+	while (len - pos >= 4) {
+		size_t sub_len;
+
+		version = (buf[pos] >> 6) & 3;
+		if (version != 3 && version != 1)
+			break;
+
+		sub_len = (((((size_t)buf[pos + 2]) << 8) |
+			    (size_t)buf[pos + 3]) + 1) * 4;
+		if (sub_len > len - pos)
+			break;
+
+		if (buf[pos + 1] == RTCP_SDES || buf[pos + 1] == RTCP_BYE)
+			return 0;
+
+		pos += sub_len;
+	}
+
+	return 1;
+}
+
+/*! Parser states of the directory listing filter */
+enum {
+	DIR_START = 0,
+	DIR_COUNT,
+	DIR_CALL,
+	DIR_DATA,
+	DIR_ID,
+	DIR_IP,
+	DIR_PASS
+};
+
+/*! Bytes that introduce a directory listing */
+static const uint8_t dir_start_marker[4] = { '@', '@', '@', '\n' };
+
+/*!
+ * @brief Emit the current callsign line, rewritten unless it is a marker
+ *
+ * @param[in,out] f Filter state
+ * @param[out] out Buffer receiving the line and its terminating newline
+ *
+ * @returns Number of bytes written to @p out
+ */
+static size_t dir_emit_call(struct packet_filter_dir *f, uint8_t *out)
+{
+	size_t o = 0;
+	size_t i;
+	size_t call_len = 0;
+
+	f->call_dot = (f->line_len == 1 && f->line[0] == '.') ? 1 : 0;
+
+	if (f->line_len == 0 ||
+	    (f->line_len == 1 && (f->line[0] == '.' || f->line[0] == ' '))) {
+		memcpy(out, f->line, f->line_len);
+		o = f->line_len;
+	} else {
+		for (i = 0; i < f->line_len &&
+			    call_len < PACKET_FILTER_MAX_CALLSIGN_LEN; i++) {
+			if (is_callsign_char(f->line[i])) {
+				out[o++] = f->line[i];
+				call_len++;
+			}
+		}
+	}
+
+	out[o++] = '\n';
+
+	return o;
+}
+
+void packet_filter_dir_init(struct packet_filter_dir *f)
+{
+	f->state = DIR_START;
+	f->start_len = 0;
+	f->remaining = 0;
+	f->line_len = 0;
+	f->call_dot = 0;
+}
+
+size_t packet_filter_dir_process(struct packet_filter_dir *f,
+				 const uint8_t *in, size_t in_len,
+				 uint8_t *out)
+{
+	size_t i;
+	size_t o = 0;
+
+	for (i = 0; i < in_len; i++) {
+		uint8_t ch = in[i];
+
+		switch (f->state) {
+		case DIR_PASS:
+			out[o++] = ch;
+			break;
+
+		case DIR_START:
+			out[o++] = ch;
+			if (ch == dir_start_marker[f->start_len]) {
+				f->start_len++;
+				if (f->start_len == sizeof(dir_start_marker)) {
+					f->state = DIR_COUNT;
+					f->line_len = 0;
+				}
+			} else {
+				f->state = DIR_PASS;
+			}
+			break;
+
+		case DIR_COUNT:
+			out[o++] = ch;
+			if (ch == '\n') {
+				f->line[f->line_len] = 0;
+				f->remaining =
+					strtol((char *)f->line, NULL, 10);
+				f->line_len = 0;
+				f->call_dot = 0;
+				f->state = f->remaining > 0 ?
+					   DIR_CALL : DIR_PASS;
+			} else if (f->line_len < PACKET_FILTER_DIR_LINE_LEN - 1) {
+				f->line[f->line_len++] = ch;
+			} else {
+				f->state = DIR_PASS;
+			}
+			break;
+
+		case DIR_CALL:
+			if (ch == '\n') {
+				o += dir_emit_call(f, out + o);
+				f->line_len = 0;
+				f->state = DIR_DATA;
+			} else if (f->line_len < PACKET_FILTER_DIR_LINE_LEN - 1) {
+				f->line[f->line_len++] = ch;
+			} else {
+				memcpy(out + o, f->line, f->line_len);
+				o += f->line_len;
+				out[o++] = ch;
+				f->line_len = 0;
+				f->state = DIR_PASS;
+			}
+			break;
+
+		case DIR_DATA:
+			out[o++] = ch;
+			if (ch == '\n')
+				f->state = DIR_ID;
+			break;
+
+		case DIR_ID:
+			out[o++] = ch;
+			if (ch == '\n')
+				f->state = DIR_IP;
+			break;
+
+		case DIR_IP:
+			out[o++] = ch;
+			if (ch == '\n') {
+				if (f->call_dot) {
+					f->state = DIR_CALL;
+				} else {
+					f->remaining--;
+					f->state = f->remaining <= 0 ?
+						   DIR_PASS : DIR_CALL;
+				}
+				f->call_dot = 0;
+			}
+			break;
+
+		default:
+			out[o++] = ch;
+			f->state = DIR_PASS;
+			break;
+		}
+	}
+
+	return o;
+}
+
+size_t packet_filter_dir_flush(struct packet_filter_dir *f, uint8_t *out)
+{
+	size_t o = 0;
+
+	if (f->state == DIR_CALL && f->line_len > 0) {
+		memcpy(out, f->line, f->line_len);
+		o = f->line_len;
+		f->line_len = 0;
+	}
+
+	return o;
 }

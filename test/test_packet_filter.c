@@ -96,6 +96,33 @@ static int test_ndata(void);
 static int test_sdes(void);
 
 /*!
+ * @brief Tests of the data packet format filter
+ *
+ * @returns 0 on success, negative ERRNO value on failure
+ *
+ * @test Tests of the data packet format filter
+ */
+static int test_data(void);
+
+/*!
+ * @brief Tests of the control packet format filter
+ *
+ * @returns 0 on success, negative ERRNO value on failure
+ *
+ * @test Tests of the control packet format filter
+ */
+static int test_control(void);
+
+/*!
+ * @brief Tests of the directory listing filter
+ *
+ * @returns 0 on success, negative ERRNO value on failure
+ *
+ * @test Tests of the directory listing filter
+ */
+static int test_dir(void);
+
+/*!
  * @brief Main entry point for packet filter tests
  *
  * @returns 0 on success, non-zero value on failure
@@ -108,6 +135,9 @@ int main(void)
 
 	ret |= test_ndata();
 	ret |= test_sdes();
+	ret |= test_data();
+	ret |= test_control();
+	ret |= test_dir();
 
 	return ret;
 }
@@ -275,6 +305,140 @@ static int test_sdes(void)
 		      packet_filter_sdes_unsafe(pkt, len), 0);
 
 	ret |= expect("empty packet", packet_filter_sdes_unsafe(pkt, 0), 0);
+
+	return ret;
+}
+
+static int test_data(void)
+{
+	uint8_t audio[1100];
+	static const uint8_t ndata_info[] = "oNDATA\rhi\n";
+	static const uint8_t unknown[] = "oHELLO!!";
+	int ret = 0;
+
+	memset(audio, 0, sizeof(audio));
+	audio[0] = 0xc0;
+	audio[1] = 0x03; /* GSM */
+
+	ret |= expect("GSM audio of the expected size",
+		      packet_filter_data_invalid(audio, 12 + 4 * 33), 0);
+	ret |= expect("GSM audio one byte too short",
+		      packet_filter_data_invalid(audio, 12 + 4 * 33 - 1), 1);
+	ret |= expect("audio shorter than the RTP header",
+		      packet_filter_data_invalid(audio, 11), 1);
+	ret |= expect("audio larger than the maximum payload",
+		      packet_filter_data_invalid(audio, 12 + 1024 + 1), 1);
+
+	audio[1] = 0x96; /* Speex */
+	ret |= expect("short Speex audio",
+		      packet_filter_data_invalid(audio, 12), 0);
+
+	ret |= expect("valid NDATA info packet",
+		      packet_filter_data_invalid(ndata_info, sizeof(ndata_info)),
+		      0);
+	ret |= expect("unknown non-audio packet",
+		      packet_filter_data_invalid(unknown, sizeof(unknown) - 1), 1);
+	ret |= expect("empty packet",
+		      packet_filter_data_invalid(audio, 0), 1);
+
+	return ret;
+}
+
+static int test_control(void)
+{
+	uint8_t pkt[TEST_PACKET_LEN];
+	static const uint8_t bye[] = {
+		0xc0, 201, 0, 1, 0, 0, 0, 0, 0xc0, 203, 0, 0
+	};
+	static const uint8_t sdes_first[] = {
+		0xc0, 202, 0, 1, 0, 0, 0, 0
+	};
+	static const uint8_t short_pkt[] = { 0xc0, 201, 0 };
+	size_t len;
+	int ret = 0;
+
+	len = build_rtcp(pkt, 3, "DB9CR", 5);
+	ret |= expect("receiver report with SDES",
+		      packet_filter_control_invalid(pkt, len), 0);
+
+	ret |= expect("receiver report with BYE",
+		      packet_filter_control_invalid(bye, sizeof(bye)), 0);
+	ret |= expect("packet not led by a report",
+		      packet_filter_control_invalid(sdes_first,
+						    sizeof(sdes_first)), 1);
+	ret |= expect("packet shorter than a header",
+		      packet_filter_control_invalid(short_pkt,
+						    sizeof(short_pkt)), 1);
+
+	pkt[0] = 0x80; /* RTP version 2 */
+	ret |= expect("wrong RTP version",
+		      packet_filter_control_invalid(pkt, len), 1);
+
+	return ret;
+}
+
+/*!
+ * @brief Run a stream through a fresh directory filter
+ *
+ * @param[in] in Input bytes
+ * @param[in] in_len Number of input bytes
+ * @param[out] out Buffer receiving the forwarded bytes
+ * @param[in] bytewise Feed the input one byte at a time when non-zero
+ *
+ * @returns Number of bytes written to @p out
+ */
+static size_t run_dir(const char *in, size_t in_len, uint8_t *out, int bytewise)
+{
+	struct packet_filter_dir f;
+	size_t i;
+	size_t o = 0;
+
+	packet_filter_dir_init(&f);
+	if (bytewise) {
+		for (i = 0; i < in_len; i++)
+			o += packet_filter_dir_process(&f,
+					(const uint8_t *)in + i, 1, out + o);
+	} else {
+		o = packet_filter_dir_process(&f, (const uint8_t *)in, in_len,
+					      out);
+	}
+	o += packet_filter_dir_flush(&f, out + o);
+
+	return o;
+}
+
+static int test_dir(void)
+{
+	static const char listing[] =
+		"@@@\n2\nDB9CR\ndesc [ON]\n1234\n1.2.3.4\n"
+		"BAD[x]CALL\ndesc2\n5678\n5.6.7.8\n+++\n";
+	static const char expected[] =
+		"@@@\n2\nDB9CR\ndesc [ON]\n1234\n1.2.3.4\n"
+		"BADxCALL\ndesc2\n5678\n5.6.7.8\n+++\n";
+	static const char passthru[] = "HELLO\n[x]\nworld\n";
+	uint8_t out[1024];
+	size_t o;
+	int ret = 0;
+
+	o = run_dir(listing, sizeof(listing) - 1, out, 0);
+	if (o != sizeof(expected) - 1 || memcmp(out, expected, o) != 0) {
+		fprintf(stderr,
+			"Error: directory listing not sanitized as expected\n");
+		ret |= -EINVAL;
+	}
+
+	o = run_dir(listing, sizeof(listing) - 1, out, 1);
+	if (o != sizeof(expected) - 1 || memcmp(out, expected, o) != 0) {
+		fprintf(stderr,
+			"Error: byte-wise directory listing differs\n");
+		ret |= -EINVAL;
+	}
+
+	o = run_dir(passthru, sizeof(passthru) - 1, out, 0);
+	if (o != sizeof(passthru) - 1 || memcmp(out, passthru, o) != 0) {
+		fprintf(stderr, "Error: non-listing stream was altered\n");
+		ret |= -EINVAL;
+	}
 
 	return ret;
 }

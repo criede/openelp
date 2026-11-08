@@ -250,6 +250,7 @@ static void forwarder_control(struct worker_handle *wh)
 	struct proxy_msg *msg = (struct proxy_msg *)buf;
 	int ret;
 	struct drop_log sdes_drops = { 0, 0 };
+	struct drop_log cfmt_drops = { 0, 0 };
 
 	msg->type = PROXY_MSG_TYPE_UDP_CONTROL;
 
@@ -261,6 +262,13 @@ static void forwarder_control(struct worker_handle *wh)
 		ret = conn_recv_any(&priv->conn_control, buf + sizeof(*msg),
 				    CONN_BUFF_LEN_HEADERLESS, &addr, NULL);
 		if (ret > 0) {
+			if (packet_filter_control_invalid(buf + sizeof(*msg),
+							  (size_t)ret)) {
+				log_drop(pc, &cfmt_drops,
+					 "malformed control packet(s)", ret);
+				continue;
+			}
+
 			/* GHSA-6w9x-486p-ggrj (SDES callsign) mitigation */
 			if (packet_filter_sdes_unsafe(buf + sizeof(*msg),
 						      (size_t)ret)) {
@@ -291,6 +299,8 @@ static void forwarder_control(struct worker_handle *wh)
 				log_drop(pc, &sdes_drops,
 					 "RTCP SDES packet(s) with an unsafe callsign (GHSA-6w9x-486p-ggrj mitigation)",
 					 0);
+				log_drop(pc, &cfmt_drops,
+					 "malformed control packet(s)", 0);
 
 				proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 					  "Client '%s' UDP Control thread is returning due to a client connection error (%d): %s\n",
@@ -336,6 +346,7 @@ static void forwarder_control(struct worker_handle *wh)
 	log_drop(pc, &sdes_drops,
 		 "RTCP SDES packet(s) with an unsafe callsign (GHSA-6w9x-486p-ggrj mitigation)",
 		 0);
+	log_drop(pc, &cfmt_drops, "malformed control packet(s)", 0);
 
 	proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 		  "Client '%s' UDP Control worker is returning cleanly\n",
@@ -378,7 +389,7 @@ static void forwarder_data(struct worker_handle *wh)
 	uint8_t buf[CONN_BUFF_LEN] = { 0 };
 	struct proxy_msg *msg = (struct proxy_msg *)buf;
 	int ret;
-	struct drop_log ndata_drops = { 0, 0 };
+	struct drop_log data_drops = { 0, 0 };
 
 	msg->type = PROXY_MSG_TYPE_UDP_DATA;
 
@@ -390,12 +401,10 @@ static void forwarder_data(struct worker_handle *wh)
 		ret = conn_recv_any(&priv->conn_data, buf + sizeof(*msg),
 				    CONN_BUFF_LEN_HEADERLESS, &addr, NULL);
 		if (ret > 0) {
-			/* CVE-2026-73152 (GHSA-2m63-p9h9-p5rf) mitigation */
-			if (packet_filter_ndata_malformed(buf + sizeof(*msg),
-							  (size_t)ret)) {
-				log_drop(pc, &ndata_drops,
-					 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)",
-					 ret);
+			if (packet_filter_data_invalid(buf + sizeof(*msg),
+						       (size_t)ret)) {
+				log_drop(pc, &data_drops,
+					 "malformed data packet(s)", ret);
 				continue;
 			}
 
@@ -417,8 +426,8 @@ static void forwarder_data(struct worker_handle *wh)
 			if (ret < 0) {
 				conn_close(&priv->conn_data);
 
-				log_drop(pc, &ndata_drops,
-					 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)",
+				log_drop(pc, &data_drops,
+					 "malformed data packet(s)",
 					 0);
 
 				proxy_log(pc->ph, LOG_LEVEL_DEBUG,
@@ -462,8 +471,8 @@ static void forwarder_data(struct worker_handle *wh)
 
 	conn_close(&priv->conn_data);
 
-	log_drop(pc, &ndata_drops,
-		 "malformed NDATA packet(s) (CVE-2026-73152 mitigation)", 0);
+	log_drop(pc, &data_drops,
+		 "malformed data packet(s)", 0);
 
 	proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 		  "Client '%s' UDP Data worker is returning cleanly\n",
@@ -477,9 +486,15 @@ static void forwarder_tcp(struct worker_handle *wh)
 
 	uint8_t buf[CONN_BUFF_LEN] = { 0 };
 	struct proxy_msg *msg = (struct proxy_msg *)buf;
+	uint8_t dbuf[CONN_BUFF_LEN_HEADERLESS + PACKET_FILTER_DIR_LINE_LEN];
+	struct packet_filter_dir dir;
+	size_t out_len;
+	size_t off;
+	size_t chunk;
 	int ret;
 
 	msg->type = PROXY_MSG_TYPE_TCP_DATA;
+	packet_filter_dir_init(&dir);
 
 	proxy_log(pc->ph, LOG_LEVEL_DEBUG,
 		  "TCP forwarding thread is starting for client '%s'\n",
@@ -489,18 +504,31 @@ static void forwarder_tcp(struct worker_handle *wh)
 		ret = conn_recv_any(&priv->conn_tcp, buf + sizeof(*msg),
 				    CONN_BUFF_LEN_HEADERLESS, NULL, NULL);
 		if (ret > 0) {
-			msg->size = ret;
+			out_len = packet_filter_dir_process(&dir,
+					buf + sizeof(*msg), (size_t)ret, dbuf);
 
-			proxy_log(pc->ph, LOG_LEVEL_DEBUG,
-				  "Sending TCP_DATA message to client '%s' (%d bytes)\n",
-				  priv->callsign, msg->size);
+			ret = 0;
+			for (off = 0; off < out_len; off += chunk) {
+				chunk = out_len - off;
+				if (chunk > CONN_BUFF_LEN_HEADERLESS)
+					chunk = CONN_BUFF_LEN_HEADERLESS;
+				msg->size = (uint32_t)chunk;
+				memcpy(buf + sizeof(*msg), dbuf + off, chunk);
 
-			mutex_lock(&priv->mutex_client_send);
+				proxy_log(pc->ph, LOG_LEVEL_DEBUG,
+					  "Sending TCP_DATA message to client '%s' (%d bytes)\n",
+					  priv->callsign, msg->size);
 
-			ret = conn_send(priv->conn_client, (uint8_t *)msg,
-					sizeof(*msg) + msg->size);
+				mutex_lock(&priv->mutex_client_send);
 
-			mutex_unlock(&priv->mutex_client_send);
+				ret = conn_send(priv->conn_client, (uint8_t *)msg,
+						sizeof(*msg) + msg->size);
+
+				mutex_unlock(&priv->mutex_client_send);
+
+				if (ret < 0)
+					break;
+			}
 
 			/* This is an error with the client connection */
 			if (ret < 0) {
@@ -539,6 +567,20 @@ static void forwarder_tcp(struct worker_handle *wh)
 			  "Failed to receive data on client '%s' TCP connection (%d): %s\n",
 			  priv->callsign, -ret, strerror(-ret));
 		break;
+	}
+
+	out_len = packet_filter_dir_flush(&dir, dbuf);
+	for (off = 0; off < out_len; off += chunk) {
+		chunk = out_len - off;
+		if (chunk > CONN_BUFF_LEN_HEADERLESS)
+			chunk = CONN_BUFF_LEN_HEADERLESS;
+		msg->size = (uint32_t)chunk;
+		memcpy(buf + sizeof(*msg), dbuf + off, chunk);
+
+		mutex_lock(&priv->mutex_client_send);
+		(void)conn_send(priv->conn_client, (uint8_t *)msg,
+				sizeof(*msg) + msg->size);
+		mutex_unlock(&priv->mutex_client_send);
 	}
 
 	conn_close(&priv->conn_tcp);
