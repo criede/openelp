@@ -137,6 +137,9 @@ Resources
   and the APT repository of this fork are built and published
 * [Upstream project](https://github.com/cottsay/openelp) -- The original
   OpenELP project on GitHub
+* [svxlink-db9cr](https://github.com/criede/svxlink-db9cr) -- Companion
+  fork that packages SvxLink for Debian and Raspberry Pi OS the same way
+  (APT repository with daily builds and upstream releases)
 * [Issue tracker](https://github.com/cottsay/openelp/issues) -- Report bugs
   and feature requests
 
