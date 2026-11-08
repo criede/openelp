@@ -65,6 +65,18 @@ repository: <https://criede.github.io/openelp/> (installation instructions
 in many European languages). How the packages are built and published is
 described in [.github/UPSTREAM-SYNC.MD](.github/UPSTREAM-SYNC.MD).
 
+Resources
+---------
+* [APT repository quickstart](https://criede.github.io/openelp/#quickstart) --
+  Install OpenELP on Debian and Raspberry Pi OS (daily builds and upstream
+  releases)
+* [Packaging and upstream sync](.github/UPSTREAM-SYNC.MD) -- How the packages
+  and the APT repository of this fork are built and published
+* [Upstream project](https://github.com/cottsay/openelp) -- The original
+  OpenELP project on GitHub
+* [Issue tracker](https://github.com/cottsay/openelp/issues) -- Report bugs
+  and feature requests
+
 License
 -------
 See [LICENSE](./LICENSE) file.

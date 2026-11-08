@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>OpenELP DB9CR APT-arkiv</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ eventuelt yderligere ændringer ovenpå. For til enhver tid at se præcis, hvad 
 adskiller sig fra upstream, kan du sammenligne live på GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;denne forks main</a>.</p>
 
-<h2>Hurtigstart</h2>
+<h2 id="quickstart">Hurtigstart</h2>
 <p>Kør på målsystemet (finder automatisk det rigtige kodenavn/den rigtige arkitektur):</p>
 <pre><code># Importér den offentlige signeringsnøgle
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

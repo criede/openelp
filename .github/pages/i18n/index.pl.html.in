@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>Repozytorium APT OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ oryginalnego projektu OpenELP, z dodanym na wierzchu własnym pakietowaniem
 zobaczyć dokładnie, czym fork różni się od projektu macierzystego, porównaj na żywo w serwisie GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main projektu macierzystego&nbsp;&hellip;&nbsp;main tego forka</a>.</p>
 
-<h2>Szybki start</h2>
+<h2 id="quickstart">Szybki start</h2>
 <p>Uruchom w systemie docelowym (właściwa nazwa kodowa i architektura są wykrywane automatycznie):</p>
 <pre><code># Zaimportuj publiczny klucz podpisujący
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

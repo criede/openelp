@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>OpenELP DB9CR APT-hoidla</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -44,7 +44,7 @@ võimalik, et ka muid muudatusi. Et igal ajal täpselt näha, mille poolest see
 upstreamist erineb, võrdle otse GitHubis:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;selle forki main</a>.</p>
 
-<h2>Kiirjuhend</h2>
+<h2 id="quickstart">Kiirjuhend</h2>
 <p>Käivita sihtsüsteemis (tuvastab õige koodnime/arhitektuuri automaatselt):</p>
 <pre><code># Impordi avalik allkirjastamisvõti
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

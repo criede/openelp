@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>Repositori APT OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ possiblement altres canvis afegits a sobre. Per veure exactament en què diferei
 del projecte original en qualsevol moment, compara-ho en directe a GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main del projecte original&nbsp;&hellip;&nbsp;main d'aquest fork</a>.</p>
 
-<h2>Inici ràpid</h2>
+<h2 id="quickstart">Inici ràpid</h2>
 <p>Executa-ho al sistema de destinació (detecta automàticament el nom en clau i l'arquitectura correctes):</p>
 <pre><code># Importar la clau pública de signatura
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

@@ -99,12 +99,16 @@ dpkg --validate-version "$version"
 
 # Absolute SYSCONF_INSTALL_DIR: openelpd then looks for
 # /etc/openelp/ELProxy.conf by default, and the systemd unit uses that path.
+# LIB_INSTALL_DIR and SYSTEMD_SERVICES_INSTALL_DIR are PATH-typed cache
+# variables upstream: CMake turns an untyped relative -D value for them
+# into an absolute path relative to the current directory ("/" here, giving
+# /lib/...), so they are passed as absolute paths.
 cmake -S /source -B /build \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DSYSCONF_INSTALL_DIR=/etc/openelp \
-  -DLIB_INSTALL_DIR="lib/${multiarch}" \
-  -DSYSTEMD_SERVICES_INSTALL_DIR=lib/systemd/system \
+  -DLIB_INSTALL_DIR="/usr/lib/${multiarch}" \
+  -DSYSTEMD_SERVICES_INSTALL_DIR=/usr/lib/systemd/system \
   -DBUILD_SHARED_LIBS=ON \
   -DBUILD_TESTING=ON \
   -DOPENELP_BUNDLE_PCRE=OFF \
@@ -117,6 +121,12 @@ cmake --build /build --parallel "$(nproc)"
 pkgroot=/pkgroot
 rm -rf "$pkgroot"
 DESTDIR="$pkgroot" cmake --install /build
+# Everything must land under /usr or /etc.
+unexpected=$(find "$pkgroot" -mindepth 1 -maxdepth 1 ! -name usr ! -name etc)
+if [[ -n "$unexpected" ]]; then
+  echo "Unexpected top-level install paths: ${unexpected}" >&2
+  exit 1
+fi
 
 # Runtime package only: the headers and the unversioned .so development
 # symlink are not shipped (libopenelp is used by openelpd only).

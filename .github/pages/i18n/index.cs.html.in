@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>APT repozitář OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ a případně dalšími změnami navrch. Chceš-li kdykoli přesně zjistit, č�
 liší od mateřského projektu, porovnej je živě na GitHubu:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main mateřského projektu&nbsp;&hellip;&nbsp;main tohoto forku</a>.</p>
 
-<h2>Rychlý start</h2>
+<h2 id="quickstart">Rychlý start</h2>
 <p>Spusť na cílovém systému (správné kódové jméno a architektura se zjistí automaticky):</p>
 <pre><code># Import veřejného podpisového klíče
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>Repożitorju APT OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ possibbilment bidliet oħra miżjuda fuqu. Biex tara eżattament x'inhu differen
 mill-upstream fi kwalunkwe ħin, qabbel live fuq GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main ta' dan il-fork</a>.</p>
 
-<h2>Bidu malajr</h2>
+<h2 id="quickstart">Bidu malajr</h2>
 <p>Ħaddem fuq is-sistema fil-mira (l-isem tal-kodiċi/l-arkitettura t-tajba jinstabu awtomatikament):</p>
 <pre><code># Importa ċ-ċavetta pubblika tal-iffirmar
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

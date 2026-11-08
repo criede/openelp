@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<meta name="source-sha256" content="da583e6e61d9b5eb64ea907768e9d647f1cc32b3548b80856139c39d240d5ece">
 <title>Dépôt APT OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -45,7 +45,7 @@ projet OpenELP d'origine, avec un empaquetage local (ce dépôt APT) et
 de l'amont à tout moment, compare en direct sur GitHub&nbsp;:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main amont&nbsp;&hellip;&nbsp;main de ce fork</a>.</p>
 
-<h2>Démarrage rapide</h2>
+<h2 id="quickstart">Démarrage rapide</h2>
 <p>À exécuter sur le système cible (détecte automatiquement le nom de code et l'architecture)&nbsp;:</p>
 <pre><code># Importer la clé publique de signature
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \

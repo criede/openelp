@@ -44,7 +44,7 @@ possibly further changes layered on top. To see exactly what is different
 from upstream at any point in time, compare live on GitHub:
 <a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;this fork's main</a>.</p>
 
-<h2>Quickstart</h2>
+<h2 id="quickstart">Quickstart</h2>
 <p>Run on the target system (detects the right codename/architecture automatically):</p>
 <pre><code># Import the public signing key
 curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
