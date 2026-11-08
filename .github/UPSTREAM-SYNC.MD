@@ -190,10 +190,11 @@ container and checked against `debian_major` in `build-targets.json`
 in line with distribution upgrades, which codenames do not: with
 `~<codename>`, the package of the next Debian release would sort *below*
 the trixie one (`~forky` < `~trixie`), so apt would not replace it after
-a distribution upgrade. Packages built before this change end in
-`~bookworm`/`~trixie`; they stay in the pool and sort below their
-`~deb<N>` successors (daily builds through their date and run number,
-release packages through revision 3).
+a distribution upgrade. Packages built before this change ended in
+`~bookworm`/`~trixie`; they were removed from the pool and the GitHub
+releases by the one-shot `Clean up legacy packages` workflow
+(`.github/scripts/cleanup-legacy.sh`), which rebuilds and re-signs the
+indices so only the `~deb<N>` packages remain.
 
 ### Publishing
 
