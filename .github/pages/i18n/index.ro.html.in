@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>Depozitul APT OpenELP DB9CR</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>Depozitul APT OpenELP DB9CR</h1>
+@@AI_NOTICE@@
+<p>Pachete <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>,
+EchoLink Proxy open source, pentru Raspberry Pi OS și Debian, în două
+componente &mdash; alege una:</p>
+<ul>
+<li><code>main</code>: build-uri zilnice de dezvoltare din cea mai recentă sursă a
+acestui fork, nu versiuni stabile.</li>
+<li><code>release</code>: versiunile oficiale upstream ale OpenELP (0.9.3 și
+mai noi), compilate din sursa nemodificată a versiunii upstream cu aceleași
+setări de compilare ca pachetele zilnice. Fiecare versiune este păstrată;
+<code>apt upgrade</code> trece la fiecare nouă versiune upstream.</li>
+</ul>
+<p>Pentru detalii, consultă <a href="https://github.com/@@REPO_SLUG@@">depozitul de cod sursă</a>.</p>
+
+<h2>Upstream și modificări locale</h2>
+<p>Acesta este un fork sincronizat zilnic al
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>, proiectul
+original OpenELP, cu împachetare locală (acest depozit APT) și
+eventual alte modificări adăugate peste. Pentru a vedea exact ce diferă
+față de upstream în orice moment, compară live pe GitHub:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main al acestui fork</a>.</p>
+
+<h2>Pornire rapidă</h2>
+<p>Rulează pe sistemul țintă (numele de cod/arhitectura corectă sunt detectate automat):</p>
+<pre><code># Importă cheia publică de semnare
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Adaugă sursa depozitului. Alege componenta:
+#   main     build-uri zilnice de dezvoltare
+#   release  versiuni oficiale upstream (0.9.3 și mai noi)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Obligatoriu înainte de prima pornire: setează o parolă (și opțional
+# portul, adresele de ascultare, înregistrarea și filtrele de indicative).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Activează proxy-ul la pornirea sistemului și pornește-l acum.
+sudo systemctl enable --now openelp.service
+
+# Verifică starea serviciului și urmărește jurnalul acestuia.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Obligatoriu:</strong> Proxy-ul refuză să pornească
+cât timp <code>Password</code> din <code>/etc/openelp/ELProxy.conf</code> este
+încă <code>notset</code>. Alege o parolă proprie; seteaz-o la
+<code>PUBLIC</code> doar dacă vrei să rulezi un proxy public (împreună cu un
+<code>RegistrationName</code> unic).</p>
+<p class="note">Dacă <code>apt update</code> raportează 404 pentru această sursă,
+numele de cod al sistemului tău nu este încă compilat (vezi tabelul de mai jos) &mdash; în schimb,
+modifică numele de cod din <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> într-unul
+dintre cele suportate. Ulterior, un <code>sudo apt upgrade</code> obișnuit
+preia automat noile build-uri zilnice (<code>main</code>) sau noile versiuni upstream
+(<code>release</code>) și repornește un proxy aflat în funcțiune.</p>
+<p class="note">Nu activa ambele componente în același timp: apt instalează întotdeauna
+versiunea mai mare, care de obicei este un build zilnic. Pentru a trece o
+instalare existentă de la <code>main</code> la <code>release</code>, schimbă
+componenta în <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, rulează
+<code>sudo apt update</code>, apoi instalează explicit versiunea release
+(de obicei un downgrade), de ex.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Rețea și firewall</h2>
+<p>Clienții EchoLink se conectează la proxy prin TCP pe
+<code>Port</code>-ul configurat (implicit <code>8100</code>). Proxy-ul însuși trebuie să fie
+accesibil din Internet pe porturile UDP <code>5198</code> și
+<code>5199</code> (redirecționează-le pe router dacă proxy-ul se află în spatele unui NAT)
+și are nevoie de acces de ieșire la portul TCP <code>5200</code> și la porturile UDP
+<code>5198</code>/<code>5199</code>. Permite accesul la portul proxy-ului doar
+clienților proprii, cu excepția cazului în care rulezi un proxy public.</p>
+
+<h2>Utilizarea proxy-ului cu SvxLink</h2>
+<p>În configurația modulului EchoLink al SvxLink
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>), indică
+proxy-ul și repornește SvxLink:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # adresa gazdei OpenELP
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">Clientul oficial EchoLink pentru PC se configurează la fel
+în <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Aplicarea modificărilor de configurare</h2>
+<p>OpenELP își citește configurația doar la pornire. După editarea
+<code>/etc/openelp/ELProxy.conf</code>, repornește serviciul (acest lucru întrerupe
+conexiunile active ale clienților):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Modificările locale din <code>/etc/openelp/ELProxy.conf</code> sunt
+păstrate la actualizări (este un fișier de configurare dpkg). Fișierul poate fi citit
+doar de root, deoarece conține parola proxy-ului.</p>
+
+<h2>Instalarea unei versiuni mai vechi</h2>
+<p>Versiunile recente rămân disponibile în pool o perioadă după ce au fost
+înlocuite (cele zilnice timp de o săptămână, cele săptămânale timp de o lună, cele lunare timp de un an &mdash;
+consultă „Retention” (păstrare) în
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+astfel încât un build zilnic defect poate fi de obicei anulat. Pachetele versiunilor upstream
+(componenta <code>release</code>) nu sunt eliminate niciodată:</p>
+<pre><code>apt list -a openelp   # listează toate versiunile încă prezente în depozit
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # opțional: împiedică "apt upgrade" să îl actualizeze din nou
+# sudo apt-mark unhold openelp   # mai târziu, pentru a relua actualizările automate</code></pre>
+
+<h2>Pachete</h2>
+<table>
+<tr><th>Pachet</th><th>Conține</th></tr>
+<tr><td><code>openelp</code></td><td>Daemonul proxy <code>openelpd</code> și biblioteca sa, configurația exemplu <code>/etc/openelp/ELProxy.conf</code>, un serviciu systemd (<code>openelp.service</code>, neactivat automat) și pagina de manual. Compilat cu biblioteca PCRE2 a sistemului, cu implementarea MD5 inclusă (fără dependență de OpenSSL) și jurnalizare prin syslog. Fișierele antet de dezvoltare nu sunt incluse.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Sisteme suportate</h2>
+<table>
+<tr><th>Nume de cod</th><th>Corespunde</th><th>Arhitecturi: <code>main</code> (zilnic)</th><th>Arhitecturi: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>Sisteme pe 32 de biți:</strong> pachetele <code>armhf</code>
+sunt compilate pentru Raspbian (ARMv6+VFP), baza Raspberry Pi OS pe 32 de biți,
+astfel încât rulează pe toate modelele Raspberry Pi, inclusiv Pi&nbsp;1, Zero și
+Zero&nbsp;W, și se instalează și pe Debian <code>armhf</code> (ambele sunt testate).
+<code>i386</code> (PC-uri pe 32 de biți) este compilat doar pentru Debian&nbsp;12: Debian&nbsp;13
+nu mai suportă instalarea sistemelor i386. Pachetele pe 32 de biți conțin
+aceleași funcționalități ca cele pe 64 de biți.</p>
+
+<h2>Cheia de semnare</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; importată automat de
+comenzile de pornire rapidă de mai sus.</p>
+
+<h2>Răsfoirea fișierelor depozitului</h2>
+<p><a href="dists/">dists/</a> (indexuri pentru fiecare suită, fișiere Release, liste
+Packages) &middot; <a href="pool/">pool/</a> (fișierele <code>.deb</code>
+propriu-zise) &middot; <a href="https://github.com/@@REPO_SLUG@@">depozitul de cod
+sursă</a> pe GitHub.</p>
+</body>
+</html>

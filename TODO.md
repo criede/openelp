@@ -27,3 +27,15 @@ Additional Settings
 * Configurable SO\_KEEPALIVE
 * Configurable SO\_REUSEADDR
 * Allow/reject duplicate callsigns
+
+Packages
+--------
+* Create the APT_SIGNING_KEY secret and verify the first runs of the
+  daily build and the release backlog (see .github/UPSTREAM-SYNC.MD)
+* Have native speakers review the AI-translated APT repository start pages
+* Optional libopenelp-dev package (headers, unversioned .so)
+
+Security
+--------
+* Complete security check
+* Implement all possible mitigations for malformed payloads that might trigger bugs in svxlink code

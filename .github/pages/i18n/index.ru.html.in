@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>APT-репозиторий OpenELP DB9CR</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>APT-репозиторий OpenELP DB9CR</h1>
+@@AI_NOTICE@@
+<p>Пакеты <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>,
+прокси EchoLink с открытым исходным кодом, для Raspberry Pi OS и Debian в двух
+компонентах &mdash; выбери один:</p>
+<ul>
+<li><code>main</code>: ежедневные сборки для разработки из самого свежего исходного кода
+этого форка, а не стабильные релизы.</li>
+<li><code>release</code>: официальные релизы OpenELP из upstream (0.9.3 и
+новее), собранные из неизменённого исходного кода upstream-релиза с теми же
+параметрами сборки, что и ежедневные пакеты. Каждый релиз сохраняется;
+<code>apt upgrade</code> переходит на каждый новый релиз upstream.</li>
+</ul>
+<p>Подробности смотри в <a href="https://github.com/@@REPO_SLUG@@">репозитории исходного кода</a>.</p>
+
+<h2>Upstream и локальные изменения</h2>
+<p>Это ежедневно синхронизируемый форк
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>,
+оригинального проекта OpenELP, с локальной упаковкой (этот APT-репозиторий) и,
+возможно, дальнейшими изменениями поверх него. Чтобы в любой момент точно увидеть,
+чем форк отличается от upstream, сравни актуальное состояние на GitHub:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main этого форка</a>.</p>
+
+<h2>Быстрый старт</h2>
+<p>Выполни на целевой системе (нужные кодовое имя и архитектура определяются автоматически):</p>
+<pre><code># Импорт открытого ключа подписи
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Добавление источника репозитория. Выбери компонент:
+#   main     ежедневные сборки для разработки
+#   release  официальные релизы upstream (0.9.3 и новее)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Обязательно перед первым запуском: задай пароль (и при желании
+# порт, адреса привязки, регистрацию и фильтры позывных).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Включить автозапуск прокси при загрузке и запустить его сейчас.
+sudo systemctl enable --now openelp.service
+
+# Проверить состояние службы и следить за её журналом.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Обязательно:</strong> Прокси не запустится, пока
+<code>Password</code> в <code>/etc/openelp/ELProxy.conf</code> всё ещё
+имеет значение <code>notset</code>. Выбери собственный пароль; устанавливай
+<code>PUBLIC</code> только если хочешь запустить публичный прокси (вместе с
+уникальным <code>RegistrationName</code>).</p>
+<p class="note">Если <code>apt update</code> сообщает об ошибке 404 для этого источника,
+для кодового имени твоей системы ещё нет сборок (смотри таблицу ниже) &mdash; вместо этого
+измени кодовое имя в <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> на одно
+из поддерживаемых. После этого обычная команда <code>sudo apt upgrade</code>
+автоматически получает новые ежедневные сборки (<code>main</code>) или новые релизы upstream
+(<code>release</code>) и перезапускает работающий прокси.</p>
+<p class="note">Не включай оба компонента одновременно: apt всегда устанавливает
+более высокую версию, а это обычно ежедневная сборка. Чтобы перевести
+существующую установку с <code>main</code> на <code>release</code>, измени
+компонент в <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, выполни
+<code>sudo apt update</code>, а затем явно установи версию релиза
+(обычно это понижение версии), например
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Сеть и брандмауэр</h2>
+<p>Клиенты EchoLink подключаются к прокси по TCP на настроенный
+<code>Port</code> (по умолчанию <code>8100</code>). Сам прокси должен быть
+доступен из Интернета по UDP-портам <code>5198</code> и
+<code>5199</code> (перенаправь их на маршрутизаторе, если прокси находится за NAT)
+и нуждается в исходящем доступе к TCP-порту <code>5200</code> и UDP-портам
+<code>5198</code>/<code>5199</code>. Разрешай доступ к порту прокси только
+своим клиентам, если ты не запускаешь публичный прокси.</p>
+
+<h2>Использование прокси с SvxLink</h2>
+<p>В конфигурации модуля EchoLink для SvxLink
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>) укажи
+прокси и перезапусти SvxLink:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # адрес хоста OpenELP
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">Официальный клиент EchoLink для ПК настраивается так же
+в разделе <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Применение изменений конфигурации</h2>
+<p>OpenELP считывает свою конфигурацию только при запуске. После редактирования
+<code>/etc/openelp/ELProxy.conf</code> перезапусти службу (при этом активные
+клиентские подключения разрываются):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Локальные изменения в <code>/etc/openelp/ELProxy.conf</code>
+сохраняются при обновлениях (это конфигурационный файл dpkg). Файл доступен для
+чтения только root, поскольку содержит пароль прокси.</p>
+
+<h2>Установка более старой версии</h2>
+<p>Недавние версии остаются доступными в пуле (pool) ещё некоторое время после
+замены более новыми (ежедневные в течение недели, еженедельные в течение месяца,
+ежемесячные в течение года &mdash;
+смотри раздел «Retention» (хранение) в
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+поэтому неудачную ежедневную сборку обычно можно откатить. Пакеты релизов upstream
+(компонент <code>release</code>) никогда не удаляются:</p>
+<pre><code>apt list -a openelp   # показывает все версии, которые ещё есть в репозитории
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # необязательно: не даёт "apt upgrade" снова её обновить
+# sudo apt-mark unhold openelp   # позже, чтобы возобновить автоматические обновления</code></pre>
+
+<h2>Пакеты</h2>
+<table>
+<tr><th>Пакет</th><th>Содержимое</th></tr>
+<tr><td><code>openelp</code></td><td>Демон прокси <code>openelpd</code> и его библиотека, пример конфигурации <code>/etc/openelp/ELProxy.conf</code>, служба systemd (<code>openelp.service</code>, не включается автоматически) и страница руководства (man). Собран с системной библиотекой PCRE2, со встроенной реализацией MD5 (без зависимости от OpenSSL) и журналированием через syslog. Заголовочные файлы для разработки не включены.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Поддерживаемые системы</h2>
+<table>
+<tr><th>Кодовое имя</th><th>Соответствует</th><th>Архитектуры: <code>main</code> (ежедневные)</th><th>Архитектуры: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32-битные системы:</strong> пакеты <code>armhf</code>
+собираются для Raspbian (ARMv6+VFP), основы 32-битной Raspberry Pi OS,
+поэтому они работают на всех моделях Raspberry Pi, включая Pi&nbsp;1, Zero и
+Zero&nbsp;W, а также устанавливаются на Debian <code>armhf</code> (оба варианта протестированы).
+<code>i386</code> (32-битные ПК) собирается только для Debian&nbsp;12: Debian&nbsp;13
+больше не поддерживает установку систем i386. 32-битные пакеты содержат
+те же функции, что и 64-битные.</p>
+
+<h2>Ключ подписи</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; импортируется автоматически
+командами быстрого старта выше.</p>
+
+<h2>Просмотр файлов репозитория</h2>
+<p><a href="dists/">dists/</a> (индексы для каждого набора (suite), файлы Release, списки
+Packages) &middot; <a href="pool/">pool/</a> (сами файлы <code>.deb</code>)
+&middot; <a href="https://github.com/@@REPO_SLUG@@">репозиторий исходного
+кода</a> на GitHub.</p>
+</body>
+</html>

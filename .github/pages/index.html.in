@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenELP DB9CR APT repository</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>OpenELP DB9CR APT repository</h1>
+@@AI_NOTICE@@
+<p>Packages of <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>, the
+Open Source EchoLink Proxy, for Raspberry Pi OS and Debian, in two
+components &mdash; pick one:</p>
+<ul>
+<li><code>main</code>: daily development builds from the latest source of
+this fork, not stable releases.</li>
+<li><code>release</code>: the official upstream OpenELP releases (0.9.3 and
+newer), built from the unmodified upstream release source with the same
+build settings as the daily packages. Every release is kept;
+<code>apt upgrade</code> moves to each new upstream release.</li>
+</ul>
+<p>See the <a href="https://github.com/@@REPO_SLUG@@">source repository</a>
+for details.</p>
+
+<h2>Upstream &amp; local changes</h2>
+<p>This is a daily-synced fork of
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>, the
+original OpenELP project, with local packaging (this APT repository) and
+possibly further changes layered on top. To see exactly what is different
+from upstream at any point in time, compare live on GitHub:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;this fork's main</a>.</p>
+
+<h2>Quickstart</h2>
+<p>Run on the target system (detects the right codename/architecture automatically):</p>
+<pre><code># Import the public signing key
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Add the repository source. Choose the component:
+#   main     daily development builds
+#   release  official upstream releases (0.9.3 and newer)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Mandatory before the first start: set a password (and optionally the
+# port, bind addresses, registration and callsign filters).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Enable the proxy at boot and start it now.
+sudo systemctl enable --now openelp.service
+
+# Check service state and follow its log.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Required:</strong> The proxy refuses to start
+while <code>Password</code> in <code>/etc/openelp/ELProxy.conf</code> is
+still <code>notset</code>. Choose a password of your own; set it to
+<code>PUBLIC</code> only if you want to run a public proxy (together with a
+unique <code>RegistrationName</code>).</p>
+<p class="note">If <code>apt update</code> reports a 404 for this source, your
+system's codename isn't built yet (see the table below) &mdash; edit the
+codename in <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> to one of
+the supported ones instead. Afterwards, a regular <code>sudo apt upgrade</code>
+picks up new daily builds (<code>main</code>) or new upstream releases
+(<code>release</code>) automatically and restarts a running proxy.</p>
+<p class="note">Do not enable both components at once: apt always installs
+whichever version is higher, which is usually a daily build. To switch an
+existing installation from <code>main</code> to <code>release</code>, change
+the component in <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, run
+<code>sudo apt update</code>, then install the release version explicitly
+(usually a downgrade), e.g.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Network and firewall</h2>
+<p>EchoLink clients connect to the proxy over TCP on the configured
+<code>Port</code> (default <code>8100</code>). The proxy itself must be
+reachable from the Internet on UDP ports <code>5198</code> and
+<code>5199</code> (forward them on your router if the proxy is behind NAT)
+and needs outgoing access to TCP port <code>5200</code> and UDP ports
+<code>5198</code>/<code>5199</code>. Allow only your own clients to reach
+the proxy port unless you run a public proxy.</p>
+
+<h2>Using the proxy with SvxLink</h2>
+<p>In SvxLink's EchoLink module configuration
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>), point it to the
+proxy and restart SvxLink:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # address of the OpenELP host
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">The official EchoLink PC client is configured the same way
+under <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Applying configuration changes</h2>
+<p>OpenELP reads its configuration only at startup. After editing
+<code>/etc/openelp/ELProxy.conf</code>, restart the service (this drops
+active client connections):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Local changes to <code>/etc/openelp/ELProxy.conf</code> are
+kept on upgrades (it is a dpkg configuration file). The file is readable by
+root only, since it contains the proxy password.</p>
+
+<h2>Installing an older version</h2>
+<p>Recent versions stay available in the pool for a while after being
+superseded (daily for a week, weekly for a month, monthly for a year &mdash;
+see "Retention" in
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+so a bad daily build can usually be rolled back. Upstream release packages
+(<code>release</code> component) are never removed:</p>
+<pre><code>apt list -a openelp   # lists every version still in the repository
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # optional: stop "apt upgrade" pulling it forward again
+# sudo apt-mark unhold openelp   # later, to resume automatic updates</code></pre>
+
+<h2>Packages</h2>
+<table>
+<tr><th>Package</th><th>Contains</th></tr>
+<tr><td><code>openelp</code></td><td>The <code>openelpd</code> proxy daemon and its library, the sample configuration <code>/etc/openelp/ELProxy.conf</code>, a systemd service (<code>openelp.service</code>, not enabled automatically) and the manual page. Built against the system PCRE2 library, with the bundled MD5 implementation (no OpenSSL dependency) and syslog logging. Development headers are not included.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Supported systems</h2>
+<table>
+<tr><th>Codename</th><th>Matches</th><th>Architectures: <code>main</code> (daily)</th><th>Architectures: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32-bit systems:</strong> <code>armhf</code> packages
+are built against Raspbian (ARMv6+VFP), the base of 32-bit Raspberry Pi OS,
+so they run on every Raspberry Pi model including the Pi&nbsp;1, Zero and
+Zero&nbsp;W, and also install on Debian <code>armhf</code> (both are tested).
+<code>i386</code> (32-bit PCs) is built for Debian&nbsp;12 only: Debian&nbsp;13
+no longer supports installing i386 systems. The 32-bit packages contain the
+same features as the 64-bit ones.</p>
+
+<h2>Signing key</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; imported automatically by the
+quickstart commands above.</p>
+
+<h2>Browse repository files</h2>
+<p><a href="dists/">dists/</a> (per-suite indices, Release files, Packages
+lists) &middot; <a href="pool/">pool/</a> (the actual <code>.deb</code>
+files) &middot; <a href="https://github.com/@@REPO_SLUG@@">source
+repository</a> on GitHub.</p>
+</body>
+</html>

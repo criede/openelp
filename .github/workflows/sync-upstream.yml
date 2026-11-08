@@ -1,0 +1,123 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: '17 2 * * *' # 02:17 UTC, 03:17 CET / 04:17 CEST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Ceiling for the whole call graph, including build-and-publish.yml's own
+  # deploy-pages job: a reusable workflow call cannot escalate beyond what
+  # the calling workflow grants here, regardless of what the called job
+  # itself declares.
+  pages: write
+  id-token: write
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'criede/openelp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+      changed: ${{ steps.merge.outputs.changed }}
+    steps:
+      - name: Check out target branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.UPSTREAM_SYNC_TOKEN || github.token }}
+
+      - name: Merge upstream main
+        id: merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/cottsay/openelp.git
+          git fetch --no-tags upstream main
+
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo 'Already up to date.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+
+            # GitHub disables scheduled workflows in public repositories
+            # after 60 days with no repository activity (a push resets
+            # this; merely running a workflow does not). Since the build
+            # is skipped whenever upstream has nothing new, this repo
+            # could otherwise go quiet for as long as upstream does. Push
+            # a trivial heartbeat commit well before that deadline so the
+            # schedule never gets silently disabled during a genuinely
+            # quiet upstream period.
+            last_commit_age_days=$(( ($(date -u +%s) - $(git log -1 --format=%ct)) / 86400 ))
+            if [[ "$last_commit_age_days" -ge 25 ]]; then
+              date -u +%Y-%m-%dT%H:%M:%SZ > .github/HEARTBEAT
+              git add .github/HEARTBEAT
+              git commit \
+                -m "chore: heartbeat commit to keep the schedule active" \
+                -m "GitHub disables scheduled workflows in public repositories after 60 days without any repository activity. The build here is skipped whenever cottsay/openelp has nothing new, so this repo could otherwise go quiet for as long as upstream does. This commit has no other effect; it exists solely to reset that clock with margin to spare."
+              git push origin HEAD:refs/heads/main
+              echo 'Pushed a heartbeat commit (no repository activity for 25+ days).' >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            exit 0
+          fi
+
+          # Prefer our conflicting hunks, while merging non-conflicting upstream changes.
+          if ! git merge --no-commit --no-ff -X ours upstream/main; then
+            # A failed merge without MERGE_HEAD is an error, not a resolvable conflict.
+            git rev-parse --verify MERGE_HEAD >/dev/null
+            if [[ -z "$(git diff --name-only --diff-filter=U)" ]]; then
+              echo '::error::Merge failed without unresolved conflicts.'
+              exit 1
+            fi
+
+            # Resolve remaining structural conflicts (e.g. modify/delete) from HEAD.
+            # Missing paths in HEAD represent deletions that must also be preserved.
+            while IFS= read -r -d '' path; do
+              if git cat-file -e "HEAD:$path" 2>/dev/null; then
+                git --literal-pathspecs restore --source=HEAD --staged --worktree -- "$path"
+              else
+                git --literal-pathspecs rm -f -- "$path"
+              fi
+              printf 'Resolved conflict in favor of main: %s\n' "$path"
+            done < <(git diff --name-only --diff-filter=U -z)
+
+            git diff --quiet --diff-filter=U
+          fi
+
+          # Keep our workflow definitions exactly, including local additions/deletions.
+          # --no-ff above ensures this happens before committing even a fast-forward.
+          git restore --source=HEAD --staged --worktree -- .github/workflows
+          git commit --no-edit
+
+          # Never force-push: concurrent changes on main must be preserved.
+          git push origin HEAD:refs/heads/main
+          echo 'Merged cottsay/openelp main into main.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+
+      - name: Record synchronized source
+        id: source
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-and-publish:
+    name: Build and publish
+    needs: sync
+    # On the daily schedule, skip the build entirely if upstream had
+    # nothing new to merge -- a manual run (workflow_dispatch) always
+    # builds regardless, e.g. to test workflow changes.
+    if: |
+      github.repository == 'criede/openelp' &&
+      (github.event_name != 'schedule' || needs.sync.outputs.changed == 'true')
+    uses: ./.github/workflows/build-and-publish.yml
+    with:
+      source_sha: ${{ needs.sync.outputs.source_sha }}
+    secrets: inherit

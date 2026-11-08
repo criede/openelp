@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>OpenELP DB9CR APT-tároló</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>OpenELP DB9CR APT-tároló</h1>
+@@AI_NOTICE@@
+<p>Az <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>, a nyílt forráskódú
+EchoLink Proxy csomagjai Raspberry Pi OS-hez és Debianhoz, két
+komponensben &mdash; válassz egyet:</p>
+<ul>
+<li><code>main</code>: napi fejlesztői buildek ennek a forknak a legfrissebb
+forráskódjából, nem stabil kiadások.</li>
+<li><code>release</code>: a hivatalos upstream OpenELP-kiadások (0.9.3 és
+újabbak), a módosítatlan upstream kiadási forrásból, a napi csomagokkal azonos
+buildbeállításokkal fordítva. Minden kiadás megmarad;
+az <code>apt upgrade</code> minden új upstream kiadásra továbblép.</li>
+</ul>
+<p>A részletekért lásd a <a href="https://github.com/@@REPO_SLUG@@">forráskódtárolót</a>.</p>
+
+<h2>Upstream és helyi módosítások</h2>
+<p>Ez a
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>, az eredeti
+OpenELP-projekt naponta szinkronizált forkja, helyi csomagolással (ez az APT-tároló) és
+esetleg további, arra épülő módosításokkal. Ha bármikor pontosan látni szeretnéd,
+miben tér el az upstreamtől, hasonlítsd össze élőben a GitHubon:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;e fork main ága</a>.</p>
+
+<h2>Gyors kezdés</h2>
+<p>Futtasd a célrendszeren (a megfelelő kódnevet/architektúrát automatikusan felismeri):</p>
+<pre><code># A nyilvános aláírókulcs importálása
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# A tárolóforrás hozzáadása. Válaszd ki a komponenst:
+#   main     napi fejlesztői buildek
+#   release  hivatalos upstream kiadások (0.9.3 és újabbak)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Kötelező az első indítás előtt: állíts be jelszót (és opcionálisan
+# a portot, a kötési címeket, a regisztrációt és a hívójel-szűrőket).
+sudo editor /etc/openelp/ELProxy.conf
+
+# A proxy engedélyezése rendszerindításkor és azonnali elindítása.
+sudo systemctl enable --now openelp.service
+
+# A szolgáltatás állapotának ellenőrzése és naplójának követése.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Kötelező:</strong> A proxy nem indul el, amíg
+az <code>/etc/openelp/ELProxy.conf</code> fájlban a <code>Password</code> értéke
+még <code>notset</code>. Válassz saját jelszót; csak akkor állítsd
+<code>PUBLIC</code> értékre, ha nyilvános proxyt szeretnél üzemeltetni (egy
+egyedi <code>RegistrationName</code> mellett).</p>
+<p class="note">Ha az <code>apt update</code> 404-es hibát jelez ennél a forrásnál, akkor
+a rendszered kódnevéhez még nincs build (lásd az alábbi táblázatot) &mdash; ilyenkor
+írd át a kódnevet az <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> fájlban
+valamelyik támogatottra. Ezután egy szokásos <code>sudo apt upgrade</code>
+automatikusan telepíti az új napi buildeket (<code>main</code>) vagy az új upstream kiadásokat
+(<code>release</code>), és újraindítja a futó proxyt.</p>
+<p class="note">Ne engedélyezd egyszerre mindkét komponenst: az apt mindig
+a magasabb verziót telepíti, ami általában egy napi build. Egy meglévő
+telepítés <code>main</code>-ről <code>release</code>-re váltásához módosítsd
+a komponenst az <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> fájlban, futtasd
+a <code>sudo apt update</code> parancsot, majd telepítsd kifejezetten a kiadási verziót
+(ez általában visszalépés), pl.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Hálózat és tűzfal</h2>
+<p>Az EchoLink-kliensek TCP-n keresztül csatlakoznak a proxyhoz a beállított
+<code>Port</code> porton (alapértelmezés: <code>8100</code>). Magának a proxynak
+elérhetőnek kell lennie az internetről a <code>5198</code> és
+<code>5199</code> UDP-portokon (továbbítsd ezeket a routereden, ha a proxy NAT mögött van),
+és kimenő hozzáférésre van szüksége a <code>5200</code> TCP-porthoz, valamint a
+<code>5198</code>/<code>5199</code> UDP-portokhoz. Ha nem nyilvános proxyt üzemeltetsz,
+csak a saját klienseid számára engedélyezd a proxy portjának elérését.</p>
+
+<h2>A proxy használata SvxLinkkel</h2>
+<p>Az SvxLink EchoLink-moduljának konfigurációjában
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>) add meg a
+proxyt, majd indítsd újra az SvxLinket:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # az OpenELP-gép címe
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">A hivatalos EchoLink PC-kliens ugyanígy állítható be
+a <em>Setup &rarr; Connections &rarr; Proxy</em> menüpontban.</p>
+
+<h2>Konfigurációs módosítások alkalmazása</h2>
+<p>Az OpenELP csak indításkor olvassa be a konfigurációját. Az
+<code>/etc/openelp/ELProxy.conf</code> szerkesztése után indítsd újra a szolgáltatást (ez megszakítja
+az aktív kliens-kapcsolatokat):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Az <code>/etc/openelp/ELProxy.conf</code> helyi módosításai
+frissítéskor megmaradnak (ez egy dpkg-konfigurációs fájl). A fájlt csak a root
+olvashatja, mivel a proxy jelszavát tartalmazza.</p>
+
+<h2>Régebbi verzió telepítése</h2>
+<p>A legutóbbi verziók a lecserélésük után még egy ideig elérhetők maradnak a poolban
+(a napiak egy hétig, a hetiek egy hónapig, a haviak egy évig &mdash;
+lásd a „Retention” (megőrzés) részt az
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a> fájlban),
+így egy hibás napi build általában visszaállítható. Az upstream kiadási csomagok
+(<code>release</code> komponens) soha nem törlődnek:</p>
+<pre><code>apt list -a openelp   # kilistázza a tárolóban még elérhető összes verziót
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # opcionális: megakadályozza, hogy az "apt upgrade" ismét frissítse
+# sudo apt-mark unhold openelp   # később, az automatikus frissítések folytatásához</code></pre>
+
+<h2>Csomagok</h2>
+<table>
+<tr><th>Csomag</th><th>Tartalom</th></tr>
+<tr><td><code>openelp</code></td><td>Az <code>openelpd</code> proxydémon és könyvtára, a <code>/etc/openelp/ELProxy.conf</code> mintakonfiguráció, egy systemd-szolgáltatás (<code>openelp.service</code>, nincs automatikusan engedélyezve) és a kézikönyvoldal (man). A rendszer PCRE2-könyvtárával, a beépített MD5-implementációval (OpenSSL-függőség nélkül) és syslog-naplózással fordítva. Fejlesztői fejlécfájlokat nem tartalmaz.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Támogatott rendszerek</h2>
+<table>
+<tr><th>Kódnév</th><th>Megfelelője</th><th>Architektúrák: <code>main</code> (napi)</th><th>Architektúrák: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32 bites rendszerek:</strong> az <code>armhf</code> csomagok
+a Raspbianhoz (ARMv6+VFP), a 32 bites Raspberry Pi OS alapjához készülnek,
+így minden Raspberry Pi modellen futnak, beleértve a Pi&nbsp;1, Zero és
+Zero&nbsp;W modelleket is, és Debian <code>armhf</code> rendszerre is telepíthetők (mindkettő tesztelt).
+Az <code>i386</code> (32 bites PC-k) csak Debian&nbsp;12-höz készül: a Debian&nbsp;13
+már nem támogatja i386 rendszerek telepítését. A 32 bites csomagok
+ugyanazokat a funkciókat tartalmazzák, mint a 64 bitesek.</p>
+
+<h2>Aláírókulcs</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; a fenti gyorskezdési parancsok
+automatikusan importálják.</p>
+
+<h2>A tároló fájljainak böngészése</h2>
+<p><a href="dists/">dists/</a> (suite-onkénti indexek, Release fájlok, Packages
+listák) &middot; <a href="pool/">pool/</a> (maguk a <code>.deb</code>
+fájlok) &middot; <a href="https://github.com/@@REPO_SLUG@@">forráskódtároló</a>
+a GitHubon.</p>
+</body>
+</html>

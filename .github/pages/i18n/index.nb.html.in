@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>OpenELP DB9CR APT-arkiv</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>OpenELP DB9CR APT-arkiv</h1>
+@@AI_NOTICE@@
+<p>Pakker av <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>, den
+åpne EchoLink-proxyen (Open Source EchoLink Proxy), for Raspberry Pi OS og
+Debian, i to komponenter &mdash; velg én:</p>
+<ul>
+<li><code>main</code>: daglige utviklingsbygg fra den nyeste kildekoden i
+denne forken, ikke stabile utgivelser.</li>
+<li><code>release</code>: de offisielle upstream-utgivelsene av OpenELP (0.9.3 og
+nyere), bygget fra den uendrede upstream-kildekoden for utgivelsen med de samme
+bygginnstillingene som de daglige pakkene. Hver utgivelse beholdes;
+<code>apt upgrade</code> går over til hver nye upstream-utgivelse.</li>
+</ul>
+<p>Se <a href="https://github.com/@@REPO_SLUG@@">kildekodearkivet</a>
+for detaljer.</p>
+
+<h2>Upstream og lokale endringer</h2>
+<p>Dette er en daglig synkronisert fork av
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>, det
+opprinnelige OpenELP-prosjektet, med lokal pakking (dette APT-arkivet) og
+eventuelt flere endringer lagt oppå. For når som helst å se nøyaktig hva som
+skiller seg fra upstream, kan du sammenligne direkte på GitHub:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;denne forkens main</a>.</p>
+
+<h2>Hurtigstart</h2>
+<p>Kjør på målsystemet (finner riktig kodenavn/arkitektur automatisk):</p>
+<pre><code># Importer den offentlige signeringsnøkkelen
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Legg til arkivkilden. Velg komponent:
+#   main     daglige utviklingsbygg
+#   release  offisielle upstream-utgivelser (0.9.3 og nyere)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Obligatorisk før første oppstart: angi et passord (og eventuelt
+# port, bindingsadresser, registrering og kallesignalfiltre).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Aktiver proxyen ved oppstart og start den nå.
+sudo systemctl enable --now openelp.service
+
+# Sjekk tjenestestatus og følg loggen.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Påkrevd:</strong> Proxyen nekter å starte så lenge
+<code>Password</code> i <code>/etc/openelp/ELProxy.conf</code> fortsatt er
+<code>notset</code>. Velg ditt eget passord; sett det til
+<code>PUBLIC</code> bare hvis du vil drive en offentlig proxy (sammen med et
+unikt <code>RegistrationName</code>).</p>
+<p class="note">Hvis <code>apt update</code> rapporterer 404 for denne kilden, bygges
+ikke systemets kodenavn ennå (se tabellen nedenfor) &mdash; endre i stedet
+kodenavnet i <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> til et av
+de støttede. Deretter henter en vanlig <code>sudo apt upgrade</code>
+automatisk nye daglige bygg (<code>main</code>) eller nye upstream-utgivelser
+(<code>release</code>) og starter en kjørende proxy på nytt.</p>
+<p class="note">Ikke aktiver begge komponentene samtidig: apt installerer alltid
+den høyeste versjonen, som vanligvis er et daglig bygg. For å bytte en
+eksisterende installasjon fra <code>main</code> til <code>release</code>, endre
+komponenten i <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, kjør
+<code>sudo apt update</code> og installer deretter utgivelsesversjonen eksplisitt
+(vanligvis en nedgradering), f.eks.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Nettverk og brannmur</h2>
+<p>EchoLink-klienter kobler til proxyen over TCP på den konfigurerte
+<code>Port</code> (standard <code>8100</code>). Selve proxyen må være
+nåbar fra Internett på UDP-portene <code>5198</code> og
+<code>5199</code> (videresend dem i ruteren hvis proxyen står bak NAT)
+og trenger utgående tilgang til TCP-port <code>5200</code> og UDP-portene
+<code>5198</code>/<code>5199</code>. La bare dine egne klienter nå
+proxyporten, med mindre du driver en offentlig proxy.</p>
+
+<h2>Bruke proxyen med SvxLink</h2>
+<p>Pek SvxLinks konfigurasjon av EchoLink-modulen
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>) mot
+proxyen og start SvxLink på nytt:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # adressen til OpenELP-verten
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">Den offisielle EchoLink-klienten for PC konfigureres på samme måte
+under <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Ta i bruk konfigurasjonsendringer</h2>
+<p>OpenELP leser konfigurasjonen sin bare ved oppstart. Etter å ha redigert
+<code>/etc/openelp/ELProxy.conf</code> starter du tjenesten på nytt (dette kobler
+fra aktive klientforbindelser):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Lokale endringer i <code>/etc/openelp/ELProxy.conf</code>
+beholdes ved oppgraderinger (det er en dpkg-konfigurasjonsfil). Filen kan bare
+leses av root, siden den inneholder proxypassordet.</p>
+
+<h2>Installere en eldre versjon</h2>
+<p>Nylige versjoner forblir tilgjengelige i poolen en stund etter at de er
+erstattet (daglig i en uke, ukentlig i en måned, månedlig i et år &mdash;
+se «Retention» (oppbevaring) i
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+så et dårlig daglig bygg kan vanligvis rulles tilbake. Pakker med upstream-utgivelser
+(komponenten <code>release</code>) fjernes aldri:</p>
+<pre><code>apt list -a openelp   # viser alle versjoner som fortsatt finnes i arkivet
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # valgfritt: hindrer "apt upgrade" i å oppgradere den igjen
+# sudo apt-mark unhold openelp   # senere, for å gjenoppta automatiske oppdateringer</code></pre>
+
+<h2>Pakker</h2>
+<table>
+<tr><th>Pakke</th><th>Innhold</th></tr>
+<tr><td><code>openelp</code></td><td>Proxydemonen <code>openelpd</code> og biblioteket dens, eksempelkonfigurasjonen <code>/etc/openelp/ELProxy.conf</code>, en systemd-tjeneste (<code>openelp.service</code>, aktiveres ikke automatisk) og manualsiden. Bygget mot systemets PCRE2-bibliotek, med den medfølgende MD5-implementasjonen (ingen avhengighet av OpenSSL) og logging via syslog. Utviklingsheaderfiler er ikke inkludert.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Støttede systemer</h2>
+<table>
+<tr><th>Kodenavn</th><th>Tilsvarer</th><th>Arkitekturer: <code>main</code> (daglig)</th><th>Arkitekturer: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32-biters systemer:</strong> <code>armhf</code>-pakker
+bygges mot Raspbian (ARMv6+VFP), grunnlaget for 32-biters Raspberry Pi OS,
+så de kjører på alle Raspberry Pi-modeller inkludert Pi&nbsp;1, Zero og
+Zero&nbsp;W, og kan også installeres på Debian <code>armhf</code> (begge er testet).
+<code>i386</code> (32-biters PC-er) bygges bare for Debian&nbsp;12: Debian&nbsp;13
+støtter ikke lenger installasjon av i386-systemer. 32-biterspakkene har
+de samme funksjonene som 64-biterspakkene.</p>
+
+<h2>Signeringsnøkkel</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; importeres automatisk av
+hurtigstartkommandoene ovenfor.</p>
+
+<h2>Bla gjennom arkivfilene</h2>
+<p><a href="dists/">dists/</a> (indekser per suite, Release-filer, Packages-lister)
+&middot; <a href="pool/">pool/</a> (de faktiske <code>.deb</code>-filene)
+&middot; <a href="https://github.com/@@REPO_SLUG@@">kildekodearkiv</a> på GitHub.</p>
+</body>
+</html>

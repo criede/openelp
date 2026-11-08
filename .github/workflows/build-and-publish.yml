@@ -1,0 +1,231 @@
+name: Build and publish
+
+# Builds the daily .deb packages, publishes them as a GitHub prerelease and
+# to the GPG-signed APT repository on gh-pages, then prunes old releases.
+# Deliberately self-contained and repository-agnostic (no repository-name
+# guard, no assumption about how the commit to build was chosen) so this
+# workflow can be copied into another repository — e.g. the upstream
+# cottsay/openelp project — and used there on its own via workflow_dispatch,
+# not only as the reusable workflow sync-upstream.yml calls after a sync.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: >-
+          Full commit SHA to build (leave empty for the default branch's
+          current HEAD). Must be the full 40-character SHA, not an
+          abbreviated one -- actions/checkout cannot reliably resolve a
+          short SHA as a ref and fails with "branch or tag ... could not
+          be found".
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      source_sha:
+        description: Commit to build. Defaults to the triggering ref's HEAD.
+        required: false
+        type: string
+    secrets:
+      APT_SIGNING_KEY:
+        description: ASCII-armored private GPG key used to sign the APT repository.
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  # Guards the gh-pages branch regardless of how this workflow was
+  # triggered (standalone dispatch or called from sync-upstream.yml), since
+  # the caller's own concurrency group only covers runs that go through it.
+  group: build-and-publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  targets:
+    name: Read build targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.read.outputs.matrix }}
+    steps:
+      - name: Check out build target list
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          sparse-checkout: .github/build-targets.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # .github/build-targets.json is the single list of suites/
+      # architectures, shared with build-releases.yml; see build-deb.yml
+      # for what each kind of target means.
+      - name: Read build targets
+        id: read
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "matrix=$(jq -c '{include: .}' .github/build-targets.json)" >> "$GITHUB_OUTPUT"
+
+  daily-deb:
+    name: ${{ matrix.suite }}/${{ matrix.arch }} daily package
+    needs: targets
+    strategy:
+      # Legs build in parallel; nothing in them writes shared state (the
+      # GitHub prereleases and the gh-pages APT repository are only touched
+      # by the single publish-daily-deb job below).
+      #
+      # fail-fast off: with emulated 32-bit ARM legs in the matrix, a
+      # failure that only hits one architecture (QEMU, 32-bit-specific
+      # compile issue, a package missing from Raspbian) is realistic, and
+      # should not cancel and withhold the other, healthy legs. The run as
+      # a whole is still marked failed, and publish-daily-deb publishes
+      # whatever legs did succeed.
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    uses: ./.github/workflows/build-deb.yml
+    with:
+      suite: ${{ matrix.suite }}
+      arch: ${{ matrix.arch }}
+      runner: ${{ matrix.runner }}
+      platform: ${{ matrix.platform }}
+      base: ${{ matrix.base }}
+      timeout: ${{ matrix.timeout }}
+      build_kind: daily
+      source_ref: ${{ inputs.source_sha || github.sha }}
+      tools_ref: ${{ inputs.source_sha || github.sha }}
+      artifact_name: daily-deb-${{ matrix.suite }}-${{ matrix.arch }}
+
+  publish-daily-deb:
+    name: Publish daily packages
+    needs: daily-deb
+    # Also after partially failed builds (but not after a cancelled run):
+    # publishes every leg that did build and pass its installation test.
+    # A failed leg uploads no artifact, so it publishes nothing.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Download built packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2, Node.js 24
+        with:
+          pattern: daily-deb-*
+          path: ${{ runner.temp }}/daily-debs
+
+      - name: Install APT repository tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gnupg dpkg-dev apt-utils
+
+      - name: Import APT repository signing key
+        id: gpgimport
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "$APT_SIGNING_KEY" | gpg --batch --import
+          fpr=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/{print $10; exit}')
+          test -n "$fpr"
+          echo "::add-mask::$fpr"
+          echo "fingerprint=$fpr" >> "$GITHUB_OUTPUT"
+
+      # Daily prereleases (one per suite, shared by its architectures) and
+      # the APT repository (component "main"); see publish-packages.sh.
+      - name: Publish daily packages (GitHub prereleases, APT repository)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GPG_KEY_FPR: ${{ steps.gpgimport.outputs.fingerprint }}
+          LEGS_DIR: ${{ runner.temp }}/daily-debs
+        shell: bash
+        run: bash .github/scripts/publish-packages.sh
+
+      - name: Remove imported signing key
+        if: always()
+        shell: bash
+        run: gpgconf --kill gpg-agent 2>/dev/null; rm -rf "$HOME/.gnupg"
+
+  deploy-pages:
+    name: Deploy APT repository to GitHub Pages
+    needs: publish-daily-deb
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Shared with build-releases.yml's deploy job: one Pages deployment at
+    # a time. A deployment still waiting here may be superseded by a newer
+    # one, which is fine -- each deploys the whole current gh-pages state.
+    concurrency:
+      group: pages-deploy-${{ github.repository }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out gh-pages content
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          ref: gh-pages
+          persist-credentials: false
+
+      # Deploying via GitHub Actions (rather than the classic "Deploy from a
+      # branch" Pages source) keeps the Node.js runtime used to build/serve
+      # Pages under the same control as every other action here. The
+      # classic source instead makes GitHub run its own internal
+      # "pages-build-deployment" workflow outside this repository (which
+      # has been observed pinned to a deprecated Node.js version we have no
+      # way to update), and -- since it also triggers on every push to the
+      # Pages source branch regardless of build_type -- keeps running
+      # alongside this job for as long as build_type stays "legacy".
+      #
+      # configure-pages creates the Pages site if it does not exist yet,
+      # but does not switch an *existing* branch-based ("legacy") site to
+      # the workflow source. That switch cannot be automated here either:
+      # changing a Pages site's build_type needs repo admin rights, which
+      # the GITHUB_TOKEN's "pages" permission does not grant even with
+      # "pages: write" declared (confirmed via "Resource not accessible by
+      # integration", HTTP 403) -- it only covers creating deployments,
+      # not reconfiguring the site. See "Setup" in UPSTREAM-SYNC.MD for the
+      # one-time manual switch this depends on.
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0, Node.js 24
+
+      - name: Upload APT repository as Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0, internally Node.js 24
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1, Node.js 24
+
+  cleanup-old-releases:
+    name: Prune old daily releases
+    needs: publish-daily-deb
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        with:
+          persist-credentials: false
+
+      - name: Prune daily releases outside the retention window
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: bash .github/scripts/prune-daily-releases.sh

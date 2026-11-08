@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>OpenELP DB9CR APT-pakkasafn</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>OpenELP DB9CR APT-pakkasafn</h1>
+@@AI_NOTICE@@
+<p>Pakkar af <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>,
+EchoLink-milliþjóninum með opnum frumkóða (Open Source EchoLink Proxy), fyrir
+Raspberry Pi OS og Debian, í tveimur hlutum &mdash; veldu einn:</p>
+<ul>
+<li><code>main</code>: daglegar þróunarsmíðar úr nýjasta frumkóða
+þessarar kvíslar, ekki stöðugar útgáfur.</li>
+<li><code>release</code>: opinberar útgáfur OpenELP-upprunaverkefnisins (0.9.3 og
+nýrri), smíðaðar úr óbreyttum frumkóða útgáfunnar frá upprunaverkefninu með sömu
+smíðastillingum og daglegu pakkarnir. Allar útgáfur eru varðveittar;
+<code>apt upgrade</code> færist yfir í hverja nýja útgáfu upprunaverkefnisins.</li>
+</ul>
+<p>Sjá <a href="https://github.com/@@REPO_SLUG@@">frumkóðasafnið</a>
+fyrir nánari upplýsingar.</p>
+
+<h2>Upprunaverkefni og staðbundnar breytingar</h2>
+<p>Þetta er daglega samstillt kvísl af
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>, upprunalega
+OpenELP-verkefninu, með staðbundinni pökkun (þessu APT-pakkasafni) og
+hugsanlega frekari breytingum ofan á. Til að sjá nákvæmlega hvað er frábrugðið
+upprunaverkefninu hverju sinni geturðu borið saman í rauntíma á GitHub:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">upstream main&nbsp;&hellip;&nbsp;main í þessari kvísl</a>.</p>
+
+<h2>Fljótleg byrjun</h2>
+<p>Keyrðu á markkerfinu (rétt kóðaheiti/högun er greind sjálfkrafa):</p>
+<pre><code># Flyttu inn opinbera undirritunarlykilinn
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Bættu pakkasafninu við sem uppsprettu. Veldu hluta (component):
+#   main     daglegar þróunarsmíðar
+#   release  opinberar útgáfur upprunaverkefnisins (0.9.3 og nýrri)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Skylda fyrir fyrstu ræsingu: settu lykilorð (og eftir atvikum
+# gátt, bindivistföng, skráningu og kallmerkjasíur).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Virkjaðu milliþjóninn við ræsingu kerfisins og ræstu hann núna.
+sudo systemctl enable --now openelp.service
+
+# Athugaðu stöðu þjónustunnar og fylgstu með annálnum hennar.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Nauðsynlegt:</strong> Milliþjónninn neitar að ræsa
+á meðan <code>Password</code> í <code>/etc/openelp/ELProxy.conf</code> er
+enn <code>notset</code>. Veldu þitt eigið lykilorð; stilltu það á
+<code>PUBLIC</code> aðeins ef þú vilt reka opinberan milliþjón (ásamt
+einstöku <code>RegistrationName</code>).</p>
+<p class="note">Ef <code>apt update</code> tilkynnir 404 fyrir þessa uppsprettu er
+kóðaheiti kerfisins þíns ekki enn smíðað (sjá töfluna hér að neðan) &mdash; breyttu þá
+kóðaheitinu í <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> í eitt af
+þeim sem eru studd. Eftir það sækir venjulegt <code>sudo apt upgrade</code>
+sjálfkrafa nýjar daglegar smíðar (<code>main</code>) eða nýjar útgáfur upprunaverkefnisins
+(<code>release</code>) og endurræsir milliþjón sem er í gangi.</p>
+<p class="note">Ekki virkja báða hlutana samtímis: apt setur alltaf upp
+þá útgáfu sem er hærri, sem er yfirleitt dagleg smíð. Til að skipta
+fyrirliggjandi uppsetningu úr <code>main</code> yfir í <code>release</code> skaltu breyta
+hlutanum í <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, keyra
+<code>sudo apt update</code> og setja síðan útgáfuna upp sérstaklega
+(yfirleitt niðurfærsla), t.d.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Netkerfi og eldveggur</h2>
+<p>EchoLink-biðlarar tengjast milliþjóninum yfir TCP á stilltri
+<code>Port</code> (sjálfgefið <code>8100</code>). Milliþjónninn sjálfur verður að vera
+aðgengilegur af netinu á UDP-gáttum <code>5198</code> og
+<code>5199</code> (áframsendu þær í beininum ef milliþjónninn er á bak við NAT)
+og þarf útleiðaraðgang að TCP-gátt <code>5200</code> og UDP-gáttum
+<code>5198</code>/<code>5199</code>. Leyfðu aðeins þínum eigin biðlurum að ná í
+gátt milliþjónsins nema þú rekir opinberan milliþjón.</p>
+
+<h2>Notkun milliþjónsins með SvxLink</h2>
+<p>Í stillingum EchoLink-einingar SvxLink
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>) skaltu vísa á
+milliþjóninn og endurræsa SvxLink:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # vistfang OpenELP-hýsilsins
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">Opinberi EchoLink-biðlarinn fyrir PC er stilltur á sama hátt
+undir <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Stillingabreytingar teknar í notkun</h2>
+<p>OpenELP les stillingar sínar aðeins við ræsingu. Eftir að þú hefur breytt
+<code>/etc/openelp/ELProxy.conf</code> skaltu endurræsa þjónustuna (það rýfur
+virkar tengingar biðlara):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Staðbundnar breytingar á <code>/etc/openelp/ELProxy.conf</code> haldast
+við uppfærslur (þetta er dpkg-stillingaskrá). Aðeins root getur lesið
+skrána, þar sem hún inniheldur lykilorð milliþjónsins.</p>
+
+<h2>Uppsetning eldri útgáfu</h2>
+<p>Nýlegar útgáfur eru áfram aðgengilegar í pool um tíma eftir að
+nýrri útgáfa hefur leyst þær af hólmi (daglegar í viku, vikulegar í mánuð, mánaðarlegar í ár &mdash;
+sjá „Retention“ (varðveisla) í
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+svo yfirleitt er hægt að snúa slæmri daglegri smíð til baka. Pakkar með útgáfum upprunaverkefnisins
+(hlutinn <code>release</code>) eru aldrei fjarlægðir:</p>
+<pre><code>apt list -a openelp   # listar allar útgáfur sem enn eru í pakkasafninu
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # valfrjálst: kemur í veg fyrir að "apt upgrade" uppfæri hann aftur
+# sudo apt-mark unhold openelp   # síðar, til að hefja sjálfvirkar uppfærslur á ný</code></pre>
+
+<h2>Pakkar</h2>
+<table>
+<tr><th>Pakki</th><th>Inniheldur</th></tr>
+<tr><td><code>openelp</code></td><td>Milliþjónspúkann <code>openelpd</code> og aðgerðasafn hans, sýnidæmi um stillingar <code>/etc/openelp/ELProxy.conf</code>, systemd-þjónustu (<code>openelp.service</code>, ekki virkjuð sjálfkrafa) og handbókarsíðuna. Smíðað gegn PCRE2-aðgerðasafni kerfisins, með innbyggðri MD5-útfærslu (engin háð OpenSSL) og annálaskráningu um syslog. Hausskrár fyrir hugbúnaðarþróun fylgja ekki.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Studd kerfi</h2>
+<table>
+<tr><th>Kóðaheiti</th><th>Samsvarar</th><th>Haganir: <code>main</code> (daglegt)</th><th>Haganir: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32 bita kerfi:</strong> <code>armhf</code>-pakkar
+eru smíðaðir gegn Raspbian (ARMv6+VFP), grunni 32 bita Raspberry Pi OS,
+svo þeir keyra á öllum gerðum Raspberry Pi, þar á meðal Pi&nbsp;1, Zero og
+Zero&nbsp;W, og er einnig hægt að setja þá upp á Debian <code>armhf</code> (hvort tveggja er prófað).
+<code>i386</code> (32 bita PC-tölvur) er aðeins smíðað fyrir Debian&nbsp;12: Debian&nbsp;13
+styður ekki lengur uppsetningu i386-kerfa. 32 bita pakkarnir hafa
+sömu eiginleika og 64 bita pakkarnir.</p>
+
+<h2>Undirritunarlykill</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; fluttur inn sjálfkrafa með
+skipunum fljótlegu byrjunarinnar hér að ofan.</p>
+
+<h2>Skoða skrár pakkasafnsins</h2>
+<p><a href="dists/">dists/</a> (yfirlit fyrir hverja útgáfuröð, Release-skrár, Packages-listar)
+&middot; <a href="pool/">pool/</a> (sjálfar <code>.deb</code>-skrárnar)
+&middot; <a href="https://github.com/@@REPO_SLUG@@">frumkóðasafn</a> á GitHub.</p>
+</body>
+</html>

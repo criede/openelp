@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="source-sha256" content="0b16657ad65c0b13419a654e7034caec9c082cda5d9979ba01a81b8754bef5e5">
+<title>APT repozitár OpenELP DB9CR</title>
+@@HREFLANG_LINKS@@
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 46rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  pre { background: #f0f0f0; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+  .note { color: #555; font-size: 0.95em; }
+  .langs { font-size: 0.85em; line-height: 1.8; border-bottom: 1px solid #ccc; padding-bottom: 0.5rem; }
+  .langs a, .langs strong { white-space: nowrap; margin-right: 0.6em; }
+  .ai-notice { background: #fff4ce; border: 1px solid #e0c060; border-radius: 4px; padding: 0.5rem 0.75rem; }
+</style>
+</head>
+<body>
+@@LANG_SWITCHER@@
+<h1>APT repozitár OpenELP DB9CR</h1>
+@@AI_NOTICE@@
+<p>Balíky <a href="https://github.com/@@REPO_SLUG@@">OpenELP</a>,
+open-source proxy pre EchoLink, pre Raspberry Pi OS a Debian, v dvoch
+komponentoch &mdash; vyber si jeden:</p>
+<ul>
+<li><code>main</code>: denné vývojové zostavenia z najnovšieho zdrojového kódu
+tohto forku, nie stabilné vydania.</li>
+<li><code>release</code>: oficiálne vydania OpenELP z materského projektu (0.9.3 a
+novšie), zostavené z nezmeneného zdrojového kódu vydania s rovnakými
+nastaveniami zostavenia ako denné balíky. Každé vydanie sa zachováva;
+<code>apt upgrade</code> prejde na každé nové vydanie materského projektu.</li>
+</ul>
+<p>Podrobnosti nájdeš v <a href="https://github.com/@@REPO_SLUG@@">zdrojovom
+repozitári</a>.</p>
+
+<h2>Materský projekt a lokálne zmeny</h2>
+<p>Toto je denne synchronizovaný fork projektu
+<a href="https://github.com/cottsay/openelp">cottsay/openelp</a>,
+pôvodného projektu OpenELP, s vlastným balíčkovaním (tento APT repozitár)
+a prípadne ďalšími zmenami navrch. Ak chceš kedykoľvek presne zistiť, čím sa fork
+líši od materského projektu, porovnaj ich naživo na GitHube:
+<a href="https://github.com/cottsay/openelp/compare/main...criede:openelp:main">main materského projektu&nbsp;&hellip;&nbsp;main tohto forku</a>.</p>
+
+<h2>Rýchly štart</h2>
+<p>Spusti na cieľovom systéme (správne kódové meno a architektúra sa zistia automaticky):</p>
+<pre><code># Import verejného podpisového kľúča
+curl -fsSL https://criede.github.io/openelp/pubkey.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/openelp-db9cr.gpg
+
+# Pridanie zdroja repozitára. Zvoľ komponent:
+#   main     denné vývojové zostavenia
+#   release  oficiálne vydania materského projektu (0.9.3 a novšie)
+component=release
+codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
+arch=$(dpkg --print-architecture)
+echo "deb [signed-by=/usr/share/keyrings/openelp-db9cr.gpg arch=${arch}] https://criede.github.io/openelp ${codename} ${component}" | \
+  sudo tee /etc/apt/sources.list.d/openelp-db9cr.list
+
+sudo apt update
+sudo apt install openelp
+
+# Povinné pred prvým spustením: nastav heslo (a voliteľne
+# port, adresy na počúvanie, registráciu a filtre volacích značiek).
+sudo editor /etc/openelp/ELProxy.conf
+
+# Povolenie proxy pri štarte systému a jeho okamžité spustenie.
+sudo systemctl enable --now openelp.service
+
+# Kontrola stavu služby a sledovanie jej protokolu.
+systemctl status openelp.service
+journalctl -u openelp.service -f</code></pre>
+<p class="note"><strong>Povinné:</strong> Proxy sa odmietne spustiť,
+kým má <code>Password</code> v <code>/etc/openelp/ELProxy.conf</code>
+stále hodnotu <code>notset</code>. Zvoľ si vlastné heslo; na
+<code>PUBLIC</code> ho nastav len vtedy, ak chceš prevádzkovať verejný proxy
+(spolu s jedinečným <code>RegistrationName</code>).</p>
+<p class="note">Ak <code>apt update</code> pre tento zdroj hlási chybu 404,
+pre kódové meno tvojho systému sa balíky zatiaľ nezostavujú (pozri tabuľku nižšie) &mdash;
+zmeň preto kódové meno v <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>
+na niektoré z podporovaných. Potom bežný <code>sudo apt upgrade</code>
+automaticky stiahne nové denné zostavenia (<code>main</code>) alebo nové vydania
+materského projektu (<code>release</code>) a reštartuje bežiaci proxy.</p>
+<p class="note">Nepovoľuj oba komponenty súčasne: apt vždy nainštaluje
+vyššiu verziu, ktorou je zvyčajne denné zostavenie. Ak chceš prepnúť
+existujúcu inštaláciu z <code>main</code> na <code>release</code>, zmeň
+komponent v <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, spusti
+<code>sudo apt update</code> a potom explicitne nainštaluj verziu vydania
+(zvyčajne ide o prechod na nižšiu verziu), napr.
+<code>sudo apt install openelp=0.9.3-1~trixie</code>.</p>
+
+<h2>Sieť a firewall</h2>
+<p>Klienti EchoLink sa k proxy pripájajú cez TCP na nakonfigurovanom porte
+<code>Port</code> (predvolene <code>8100</code>). Samotný proxy musí byť
+dosiahnuteľný z internetu na portoch UDP <code>5198</code> a
+<code>5199</code> (presmeruj ich na routeri, ak je proxy za NAT)
+a potrebuje odchádzajúci prístup k portu TCP <code>5200</code> a portom UDP
+<code>5198</code>/<code>5199</code>. Povoľ prístup k portu proxy len
+svojim vlastným klientom, pokiaľ neprevádzkuješ verejný proxy.</p>
+
+<h2>Použitie proxy so SvxLink</h2>
+<p>V konfigurácii modulu EchoLink programu SvxLink
+(<code>/etc/svxlink/svxlink.d/ModuleEchoLink.conf</code>) nastav proxy
+a reštartuj SvxLink:</p>
+<pre><code>PROXY_SERVER=192.0.2.10    # adresa hostiteľa OpenELP
+PROXY_PORT=8100
+PROXY_PASSWORD=your-password</code></pre>
+<p class="note">Oficiálny klient EchoLink pre PC sa konfiguruje rovnako
+v <em>Setup &rarr; Connections &rarr; Proxy</em>.</p>
+
+<h2>Uplatnenie zmien konfigurácie</h2>
+<p>OpenELP načítava svoju konfiguráciu len pri spustení. Po úprave
+<code>/etc/openelp/ELProxy.conf</code> reštartuj službu (tým sa prerušia
+aktívne spojenia klientov):</p>
+<pre><code>sudo systemctl restart openelp.service</code></pre>
+<p class="note">Lokálne zmeny v <code>/etc/openelp/ELProxy.conf</code> sa
+pri aktualizáciách zachovajú (ide o konfiguračný súbor dpkg). Súbor môže čítať
+iba root, pretože obsahuje heslo proxy.</p>
+
+<h2>Inštalácia staršej verzie</h2>
+<p>Nedávne verzie zostávajú v poole po nahradení novšou ešte nejaký čas dostupné
+(denné počas týždňa, týždenné počas mesiaca, mesačné počas roka &mdash;
+pozri časť „Retention“ (uchovávanie) v
+<a href="https://github.com/@@REPO_SLUG@@/blob/main/.github/UPSTREAM-SYNC.MD">UPSTREAM-SYNC.MD</a>),
+takže chybné denné zostavenie sa dá zvyčajne vrátiť späť. Balíky vydaní materského projektu
+(komponent <code>release</code>) sa nikdy neodstraňujú:</p>
+<pre><code>apt list -a openelp   # vypíše všetky verzie, ktoré sú v repozitári ešte k dispozícii
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt-mark hold openelp   # voliteľné: zabráni tomu, aby ho "apt upgrade" opäť povýšil
+# sudo apt-mark unhold openelp   # neskôr, na obnovenie automatických aktualizácií</code></pre>
+
+<h2>Balíky</h2>
+<table>
+<tr><th>Balík</th><th>Obsah</th></tr>
+<tr><td><code>openelp</code></td><td>Démon proxy <code>openelpd</code> a jeho knižnica, vzorová konfigurácia <code>/etc/openelp/ELProxy.conf</code>, služba systemd (<code>openelp.service</code>, nie je automaticky povolená) a manuálová stránka. Zostavený so systémovou knižnicou PCRE2, s pribalenou implementáciou MD5 (bez závislosti od OpenSSL) a protokolovaním cez syslog. Vývojové hlavičkové súbory nie sú súčasťou.</td></tr>
+@@EXTRA_PACKAGE_ROWS@@</table>
+
+<h2>Podporované systémy</h2>
+<table>
+<tr><th>Kódové meno</th><th>Zodpovedá</th><th>Architektúry: <code>main</code> (denné)</th><th>Architektúry: <code>release</code></th></tr>
+@@SUITE_ROWS@@</table>
+<p class="note"><strong>32-bitové systémy:</strong> balíky <code>armhf</code>
+sú zostavené pre Raspbian (ARMv6+VFP), základ 32-bitového Raspberry Pi OS,
+takže bežia na každom modeli Raspberry Pi vrátane Pi&nbsp;1, Zero a
+Zero&nbsp;W a inštalujú sa aj na Debian <code>armhf</code> (oboje je testované).
+<code>i386</code> (32-bitové PC) sa zostavuje len pre Debian&nbsp;12: Debian&nbsp;13
+už nepodporuje inštaláciu systémov i386. 32-bitové balíky majú
+rovnaké funkcie ako 64-bitové.</p>
+
+<h2>Podpisový kľúč</h2>
+<p><a href="pubkey.gpg">pubkey.gpg</a> &mdash; importuje sa automaticky
+vyššie uvedenými príkazmi rýchleho štartu.</p>
+
+<h2>Prehliadanie súborov repozitára</h2>
+<p><a href="dists/">dists/</a> (indexy jednotlivých distribúcií, súbory Release, zoznamy
+Packages) &middot; <a href="pool/">pool/</a> (samotné súbory <code>.deb</code>)
+&middot; <a href="https://github.com/@@REPO_SLUG@@">zdrojový
+repozitár</a> na GitHube.</p>
+</body>
+</html>

@@ -57,6 +57,14 @@ Windows Installer:
 
     devenv openelp.sln /project PACKAGE /build
 
+Debian and Raspberry Pi OS packages
+-----------------------------------
+This fork publishes daily builds and packages of the upstream releases for
+Debian 12/13 and Raspberry Pi OS (amd64, arm64, armhf, i386) in an APT
+repository: <https://criede.github.io/openelp/> (installation instructions
+in many European languages). How the packages are built and published is
+described in [.github/UPSTREAM-SYNC.MD](.github/UPSTREAM-SYNC.MD).
+
 License
 -------
 See [LICENSE](./LICENSE) file.
