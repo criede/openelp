@@ -1,14 +1,14 @@
 Package: openelp
-Version: 0.9.4~dev+daily20261108.3.1.g1ae9c3ed9a60-1~bookworm
+Version: 0.9.4~dev+daily20261108.4.1.gecfaaf656a11-1~deb12
 Architecture: amd64
 Maintainer: OpenELP DB9CR packaging <criede@users.noreply.github.com>
 Installed-Size: 168
 Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22), passwd
-Filename: pool/bookworm/main/o/openelp/openelp_0.9.4~dev+daily20261108.3.1.g1ae9c3ed9a60-1~bookworm_amd64.deb
-Size: 33816
-MD5sum: 83d3ba3827166f476b9a6ae7aff7f40c
-SHA1: 7bb07fab09468eb29d1a2e78b6f9ba8c9a592eab
-SHA256: 536888c6b2a77dddaf96fb50c193731dbef8bc33eb63438b988d9ac80fafb766
+Filename: pool/bookworm/main/o/openelp/openelp_0.9.4~dev+daily20261108.4.1.gecfaaf656a11-1~deb12_amd64.deb
+Size: 33824
+MD5sum: f309cc601ff8ba94b30cf4a2b982478b
+SHA1: 78399d1653c3bc8eb625264e9831ec00a2447628
+SHA256: 10463b8b321c70fa0acf39d9f9ae32b7b6d968f0f32bc3e13e256e7fd557f939
 Section: hamradio
 Priority: optional
 Homepage: https://github.com/cottsay/openelp
