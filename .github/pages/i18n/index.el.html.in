@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>Αποθετήριο APT του OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -100,7 +100,7 @@ journalctl -u openelp.service -f</code></pre>
 τη συνιστώσα στο <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, εκτέλεσε
 <code>sudo apt update</code> και μετά εγκατάστησε ρητά την έκδοση release
 (συνήθως πρόκειται για υποβάθμιση), π.χ.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Δίκτυο και τείχος προστασίας</h2>
 <p>Οι πελάτες EchoLink συνδέονται στο proxy μέσω TCP στη ρυθμισμένη
@@ -139,7 +139,7 @@ PROXY_PASSWORD=your-password</code></pre>
 οπότε μια προβληματική καθημερινή έκδοση μπορεί συνήθως να αναιρεθεί. Τα πακέτα εκδόσεων upstream
 (συνιστώσα <code>release</code>) δεν αφαιρούνται ποτέ:</p>
 <pre><code>apt list -a openelp   # εμφανίζει κάθε έκδοση που υπάρχει ακόμη στο αποθετήριο
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # προαιρετικά: εμποδίζει το "apt upgrade" να την αναβαθμίσει ξανά
 # sudo apt-mark unhold openelp   # αργότερα, για να συνεχιστούν οι αυτόματες ενημερώσεις</code></pre>
 

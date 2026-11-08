@@ -6,10 +6,12 @@ set -euo pipefail
 # separately per suite so every currently maintained suite always keeps
 # its own recent history.
 #
-# Tags look like "daily-<version>", where <version> ends in "-1-<suite>"
-# (the "~<suite>" version suffix with "~" replaced by "-") and contains a
+# Tags look like "daily-<version>", where <version> ends in "-1-deb<N>"
+# (the "~deb<N>" version suffix with "~" replaced by "-") and contains a
 # "+daily<YYYYMMDD>" marker. Tags that do not match this shape are left
-# alone.
+# alone. Tags from before the switch to numeric suffixes end in the
+# codename ("-1-trixie"); they are counted as the same series as the
+# matching "deb<N>" so retention spans the switch.
 #
 # Requires: gh (authenticated via GH_TOKEN), repo in GH_REPO/GH_TOKEN env.
 
@@ -29,6 +31,10 @@ for tag in "${tags[@]}"; do
   if [[ "$tag" =~ \+daily([0-9]{8}) ]]; then
     date="${BASH_REMATCH[1]}"
     suite="${tag##*-}"
+    case "$suite" in
+      bookworm) suite=deb12 ;;
+      trixie) suite=deb13 ;;
+    esac
     suite_pairs["$suite"]+="${date} ${tag}"$'\n'
   else
     echo "Skipping tag with unexpected shape: $tag"

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>Repository APT OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -100,7 +100,7 @@ esistente da <code>main</code> a <code>release</code>, cambia
 il componente in <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, esegui
 <code>sudo apt update</code>, quindi installa esplicitamente la versione release
 (di solito un downgrade), ad es.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Rete e firewall</h2>
 <p>I client EchoLink si connettono al proxy via TCP sulla
@@ -138,7 +138,7 @@ vedere «Retention» (conservazione) in
 quindi di solito è possibile tornare indietro da una build giornaliera difettosa. I pacchetti delle versioni upstream
 (componente <code>release</code>) non vengono mai rimossi:</p>
 <pre><code>apt list -a openelp   # elenca tutte le versioni ancora presenti nel repository
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # facoltativo: impedisce ad "apt upgrade" di aggiornarlo di nuovo
 # sudo apt-mark unhold openelp   # più tardi, per riprendere gli aggiornamenti automatici</code></pre>
 

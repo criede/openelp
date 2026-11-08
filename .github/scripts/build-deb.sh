@@ -10,10 +10,15 @@ set -euo pipefail
 #
 # Two kinds of build, selected by BUILD_KIND:
 #   daily    (default) Development build of this repository's source;
-#            version <x.y.z>[~<extra>]+daily<date>.<run>.<attempt>.g<sha>-1~<suite>.
+#            version <x.y.z>[~<extra>]+daily<date>.<run>.<attempt>.g<sha>-1~deb<N>.
 #   release  Build of an unmodified upstream release tag (UPSTREAM_TAG, e.g.
-#            "v0.9.3"); version <x.y.z>-<revision>~<suite>, with the
+#            "v0.9.3"); version <x.y.z>-<revision>~deb<N>, with the
 #            Debian revision from release-debian-revision.
+# <N> is the Debian major version of the build container (12 for
+# bookworm, 13 for trixie; Raspbian uses the same numbers). A numeric
+# suffix, as Debian's own backports use, keeps the version order in line
+# with distribution upgrades; codenames do not sort chronologically
+# (~forky < ~trixie).
 #
 # Mounts: /source (git checkout to build, read-only), /scripts (this
 # directory), /output (receives the package and its metadata).
@@ -44,6 +49,14 @@ codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release | tr -d '"')
 # too).
 os_id=$(sed -n 's/^ID=//p' /etc/os-release | tr -d '"')
 [[ "$os_id" =~ ^[a-z0-9]+$ ]]
+# Debian major version for the version suffix (see the header comment).
+debian_major=$(sed -n 's/^VERSION_ID=//p' /etc/os-release | tr -d '"' | cut -d. -f1)
+[[ "$debian_major" =~ ^[1-9][0-9]*$ ]]
+if [[ -n "${EXPECTED_DEBIAN_MAJOR:-}" && "$debian_major" != "$EXPECTED_DEBIAN_MAJOR" ]]; then
+  echo "Container is Debian ${debian_major}, expected ${EXPECTED_DEBIAN_MAJOR}." >&2
+  exit 1
+fi
+version_suffix="deb${debian_major}"
 
 apt-get update
 apt-get install -y --no-install-recommends \
@@ -90,12 +103,12 @@ if [[ "$BUILD_KIND" == release ]]; then
   # version (the older ones stay in the pool unchanged).
   revision=$(tr -d ' \r\n' < /scripts/release-debian-revision)
   [[ "$revision" =~ ^[1-9][0-9]*$ ]]
-  version="${base_version}-${revision}~${codename}"
+  version="${base_version}-${revision}~${version_suffix}"
 else
   # A pre-release suffix ("dev" between releases) is turned into "~dev",
   # so daily builds of 0.9.4-dev sort above the 0.9.3 release and below
   # the 0.9.4 release; on a release commit (no suffix) they sort above it.
-  version="${base_version}${extra_version:+~${extra_version}}+daily${date_stamp}.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}.g${source_sha:0:12}-1~${codename}"
+  version="${base_version}${extra_version:+~${extra_version}}+daily${date_stamp}.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}.g${source_sha:0:12}-1~${version_suffix}"
   # Shown by "openelpd --version" and sent as the registration User-Agent.
   # Only letters, digits and dots: the value is passed as an unquoted
   # preprocessor token and stringified.

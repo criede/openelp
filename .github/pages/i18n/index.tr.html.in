@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>OpenELP DB9CR APT deposu</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -101,7 +101,7 @@ kurulumu <code>main</code>'den <code>release</code>'e geçirmek için
 <code>/etc/apt/sources.list.d/openelp-db9cr.list</code> içindeki bileşeni değiştir,
 <code>sudo apt update</code> çalıştır, ardından sürüm paketini açıkça kur
 (genellikle bir sürüm düşürmedir), örn.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Ağ ve güvenlik duvarı</h2>
 <p>EchoLink istemcileri proxy'ye yapılandırılmış <code>Port</code> üzerinden
@@ -140,7 +140,7 @@ bkz. "Retention" (saklama) bölümü,
 bu nedenle hatalı bir günlük derleme genellikle geri alınabilir. Upstream sürüm paketleri
 (<code>release</code> bileşeni) hiçbir zaman kaldırılmaz:</p>
 <pre><code>apt list -a openelp   # depoda hâlâ bulunan tüm sürümleri listeler
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # isteğe bağlı: "apt upgrade"in onu yeniden yükseltmesini engeller
 # sudo apt-mark unhold openelp   # daha sonra, otomatik güncellemeleri sürdürmek için</code></pre>
 

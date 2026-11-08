@@ -90,6 +90,7 @@ jobs:
       runner: ${{ matrix.runner }}
       platform: ${{ matrix.platform }}
       base: ${{ matrix.base }}
+      debian_major: ${{ matrix.debian_major }}
       timeout: ${{ matrix.timeout }}
       build_kind: daily
       source_ref: ${{ inputs.source_sha || github.sha }}

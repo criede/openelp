@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>APT repozitár OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -101,7 +101,7 @@ existujúcu inštaláciu z <code>main</code> na <code>release</code>, zmeň
 komponent v <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, spusti
 <code>sudo apt update</code> a potom explicitne nainštaluj verziu vydania
 (zvyčajne ide o prechod na nižšiu verziu), napr.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Sieť a firewall</h2>
 <p>Klienti EchoLink sa k proxy pripájajú cez TCP na nakonfigurovanom porte
@@ -140,7 +140,7 @@ pozri časť „Retention“ (uchovávanie) v
 takže chybné denné zostavenie sa dá zvyčajne vrátiť späť. Balíky vydaní materského projektu
 (komponent <code>release</code>) sa nikdy neodstraňujú:</p>
 <pre><code>apt list -a openelp   # vypíše všetky verzie, ktoré sú v repozitári ešte k dispozícii
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # voliteľné: zabráni tomu, aby ho "apt upgrade" opäť povýšil
 # sudo apt-mark unhold openelp   # neskôr, na obnovenie automatických aktualizácií</code></pre>
 

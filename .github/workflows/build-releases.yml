@@ -80,6 +80,7 @@ jobs:
       runner: ${{ matrix.runner }}
       platform: ${{ matrix.platform }}
       base: ${{ matrix.base }}
+      debian_major: ${{ matrix.debian_major }}
       timeout: ${{ matrix.timeout }}
       build_kind: release
       source_repository: ${{ needs.plan.outputs.upstream_repo }}

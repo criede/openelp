@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>Depoja APT e OpenELP DB9CR</title>
 @@HREFLANG_LINKS@@
 <style>
@@ -100,7 +100,7 @@ instalim ekzistues nga <code>main</code> në <code>release</code>, ndrysho
 komponentin në <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, ekzekuto
 <code>sudo apt update</code>, pastaj instalo në mënyrë të qartë versionin release
 (zakonisht një kthim në version më të vjetër), p.sh.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Rrjeti dhe muri mbrojtës</h2>
 <p>Klientët EchoLink lidhen me proxy-n përmes TCP në
@@ -139,7 +139,7 @@ shih «Retention» (ruajtja) në
 kështu që një ndërtim ditor i dështuar zakonisht mund të kthehet mbrapsht. Paketat e versioneve upstream
 (komponenti <code>release</code>) nuk hiqen kurrë:</p>
 <pre><code>apt list -a openelp   # liston çdo version që ndodhet ende në depo
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # opsionale: ndalon "apt upgrade" ta përditësojë sërish
 # sudo apt-mark unhold openelp   # më vonë, për të rifilluar përditësimet automatike</code></pre>
 

@@ -91,15 +91,20 @@ revision=$(tr -d ' \r\n' < "$(dirname "${BASH_SOURCE[0]}")/release-debian-revisi
 entries=()
 skipped=()
 for tag in "${tags[@]}"; do
-  while IFS=$'\t' read -r suite arch target_json; do
-    deb="openelp_${tag#v}-${revision}~${suite}_${arch}.deb"
+  while IFS=$'\t' read -r suite arch debian_major target_json; do
+    # Version suffix ~deb<N> (see build-deb.sh); every target needs it.
+    if [[ ! "$debian_major" =~ ^[1-9][0-9]*$ ]]; then
+      echo "Target ${suite}/${arch} has no valid debian_major in ${TARGETS_FILE}." >&2
+      exit 1
+    fi
+    deb="openelp_${tag#v}-${revision}~deb${debian_major}_${arch}.deb"
     [[ -n "${published[$deb]:-}" ]] && continue
     if [[ -n "${failed["$tag $suite $arch"]:-}" ]]; then
       skipped+=("$tag $suite/$arch")
       continue
     fi
     entries+=("$(jq -c --arg tag "$tag" '. + {tag: $tag}' <<< "$target_json")")
-  done < <(jq -r '.[] | [.suite, .arch, (. | tojson)] | @tsv' "$TARGETS_FILE")
+  done < <(jq -r '.[] | [.suite, .arch, (.debian_major | tostring), (. | tojson)] | @tsv' "$TARGETS_FILE")
 done
 
 if [[ "${#skipped[@]}" -gt 0 ]]; then

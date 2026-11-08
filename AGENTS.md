@@ -15,6 +15,9 @@ packaging and an APT repository on GitHub Pages. See
   Pages via the GitHub Actions source, never "Deploy from a branch".
 - Raise `.github/scripts/release-debian-revision` whenever the packaging
   changes, so the release packages are rebuilt under a new version.
+- Package versions end in `~deb<N>` (Debian major version), never in a
+  codename, so they sort in distribution upgrade order. Every target in
+  `.github/build-targets.json` needs its `debian_major`.
 - Before adding a package name to an `apt-get install` line, verify it
   exists for every target suite (packages.debian.org), rather than
   guessing.

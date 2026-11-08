@@ -173,14 +173,27 @@ matching filter; keep the README list and the start page in sync.
 
 ### Version scheme
 
-Daily builds: `0.9.4~dev+daily20261108.42.1.g0123456789ab-1~trixie` —
+Daily builds: `0.9.4~dev+daily20261108.42.1.g0123456789ab-1~deb13` —
 project version from the top-level `CMakeLists.txt`
 (`OPENELP_MAJOR/MINOR/PATCH_VERSION`), the pre-release suffix
 `OPENELP_EXTRA_VERSION` (`dev` between releases) as `~dev`, UTC date,
-workflow run number, attempt, commit short hash and target suite. The
-`~dev` makes daily builds of the next version sort above the previous
-release and below the next one. `openelpd --version` shows
-`0.9.4-dev.daily20261108.g0123456789ab`.
+workflow run number, attempt, commit short hash and the target's Debian
+major version. The `~dev` makes daily builds of the next version sort
+above the previous release and below the next one. `openelpd --version`
+shows `0.9.4-dev.daily20261108.g0123456789ab`.
+
+All packages end in `~deb<N>`, the Debian major version of the target
+(`deb12` = bookworm, `deb13` = trixie; Raspbian uses the same numbers),
+like Debian's own backports. It is read from `VERSION_ID` in the build
+container and checked against `debian_major` in `build-targets.json`
+(which the release planning also uses). A numeric suffix keeps the order
+in line with distribution upgrades, which codenames do not: with
+`~<codename>`, the package of the next Debian release would sort *below*
+the trixie one (`~forky` < `~trixie`), so apt would not replace it after
+a distribution upgrade. Packages built before this change end in
+`~bookworm`/`~trixie`; they stay in the pool and sort below their
+`~deb<N>` successors (daily builds through their date and run number,
+release packages through revision 3).
 
 ### Publishing
 
@@ -204,7 +217,7 @@ published (non-draft, non-prerelease) `cottsay/openelp` release with a tag
   source changes are applied; only the build settings are the same as for
   the daily packages. The build checks that the tag matches the version
   declared in `CMakeLists.txt`.
-- **Version:** `<x.y.z>-<revision>~<suite>`, e.g. `0.9.3-2~trixie`. The
+- **Version:** `<x.y.z>-<revision>~deb<N>`, e.g. `0.9.3-3~deb13`. The
   Debian revision comes from `.github/scripts/release-debian-revision`.
   Raise it whenever the packaging changes (build options, files, maintainer
   scripts, the systemd drop-in): the planning step then finds every release
@@ -212,7 +225,8 @@ published (non-draft, non-prerelease) `cottsay/openelp` release with a tag
   the new packaging under a new, higher version, and `apt upgrade` installs
   it. Packages of older revisions stay in the pool unchanged, so a given
   version always means the same bits. Revision 1 was built before the
-  systemd hardening, revision 2 includes it.
+  systemd hardening, revision 2 includes it (both with the codename
+  suffix, e.g. `0.9.3-2~trixie`), revision 3 switched to `~deb<N>`.
 - **Publishing:** one GitHub release `release-<tag>` per upstream release
   (the highest is marked "Latest") holding the packages of all
   suites/architectures, and the APT repository's `release` component.
@@ -416,7 +430,7 @@ the values above.
 sudo sed -i 's/ main$/ release/' /etc/apt/sources.list.d/openelp-db9cr.list
 sudo apt update
 apt list -a openelp                       # shows the available versions
-sudo apt install openelp=0.9.3-2~trixie   # usually a downgrade
+sudo apt install openelp=0.9.3-3~deb13   # usually a downgrade
 ```
 
 and back:
@@ -430,7 +444,7 @@ sudo apt update && sudo apt upgrade
 
 ```sh
 apt list -a openelp
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp     # optional; "apt-mark unhold openelp" to resume updates
 ```
 
