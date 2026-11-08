@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>APT repozitorij OpenELP DB9CR</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -138,7 +138,7 @@ instalaciju želiš prebaciti s <code>main</code> na <code>release</code>, promi
 komponentu u <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, pokreni
 <code>sudo apt update</code>, a zatim izričito instaliraj verziju izdanja
 (obično je to vraćanje na nižu verziju), npr.
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Mreža i vatrozid</h2>
 <p>Klijenti EchoLinka spajaju se na proxy putem TCP-a na konfiguriranom portu
@@ -177,7 +177,7 @@ pogledaj odjeljak „Retention” (zadržavanje) u
 pa se neispravna dnevna izgradnja obično može vratiti. Paketi izdanja izvornog projekta
 (komponenta <code>release</code>) nikad se ne uklanjaju:</p>
 <pre><code>apt list -a openelp   # ispisuje sve verzije koje su još u repozitoriju
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # neobavezno: sprječava da ga "apt upgrade" ponovno nadogradi
 # sudo apt-mark unhold openelp   # kasnije, za nastavak automatskih ažuriranja</code></pre>
 

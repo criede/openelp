@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="source-sha256" content="e80f0e347893798102269cc67ae1c51c6efd408565e4e791a171a002f79c7f81">
+<meta name="source-sha256" content="74453925a9c75a670d42dfe205f44ff389d18a3357bc057ab83de5f5b5b5d1e6">
 <title>OpenELP DB9CR APT repozitorijs</title>
 <link rel="alternate" hreflang="en" href="index.html">
 <link rel="alternate" hreflang="bg" href="index.bg.html">
@@ -137,7 +137,7 @@ esošu instalāciju no <code>main</code> uz <code>release</code>, nomaini
 komponentu failā <code>/etc/apt/sources.list.d/openelp-db9cr.list</code>, izpildi
 <code>sudo apt update</code> un pēc tam skaidri instalē laidiena versiju
 (parasti tā ir versijas pazemināšana), piemēram,
-<code>sudo apt install openelp=0.9.3-2~trixie</code>.</p>
+<code>sudo apt install openelp=0.9.3-3~deb13</code>.</p>
 
 <h2>Tīkls un ugunsmūris</h2>
 <p>EchoLink klienti savienojas ar starpniekserveri pa TCP konfigurētajā portā
@@ -175,7 +175,7 @@ skati sadaļu “Retention” (saglabāšana) failā
 tāpēc sliktu ikdienas būvējumu parasti var atritināt atpakaļ. Sākotnējā projekta laidienu pakotnes
 (<code>release</code> komponents) nekad netiek dzēstas:</p>
 <pre><code>apt list -a openelp   # uzskaita visas versijas, kas vēl ir repozitorijā
-sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~trixie
+sudo apt install openelp=0.9.4~dev+daily20261108.12.1.g0123456789ab-1~deb13
 sudo apt-mark hold openelp   # neobligāti: neļauj "apt upgrade" to atkal atjaunināt
 # sudo apt-mark unhold openelp   # vēlāk, lai atsāktu automātiskos atjauninājumus</code></pre>
 
