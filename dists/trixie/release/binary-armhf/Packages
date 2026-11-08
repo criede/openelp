@@ -1,14 +1,14 @@
 Package: openelp
-Version: 0.9.3-1~trixie
+Version: 0.9.3-2~trixie
 Architecture: armhf
 Maintainer: OpenELP DB9CR packaging <criede@users.noreply.github.com>
-Installed-Size: 220
-Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22)
-Filename: pool/trixie/release/o/openelp/openelp_0.9.3-1~trixie_armhf.deb
-Size: 27456
-MD5sum: b9a5be98b93aa3af5b3b358763335128
-SHA1: 8238270fb9d534f10018b965af8b4430af006c93
-SHA256: 8ac55252c1cb20aa6fc92fa56d6e6388a8a97d36f1d88c940ac079df73e37504
+Installed-Size: 228
+Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22), passwd
+Filename: pool/trixie/release/o/openelp/openelp_0.9.3-2~trixie_armhf.deb
+Size: 28136
+MD5sum: e7aa67eaecbd48be4adb7352ef2b5954
+SHA1: b9ffe8a724d5e88310c313eac7643e8aac0d4e4a
+SHA256: cc9f3c7815d084591dc8190467622fe57e3e125d90b757b8163d1deb68858488
 Section: hamradio
 Priority: optional
 Homepage: https://github.com/cottsay/openelp
@@ -20,5 +20,6 @@ Description: Open Source EchoLink Proxy
  .
  This package contains the openelpd daemon, its library, a sample
  configuration in /etc/openelp/ELProxy.conf and a systemd service
- (openelp.service, not enabled automatically).
+ (openelp.service, not enabled automatically), which runs the proxy as
+ the unprivileged user "openelp" in a systemd sandbox.
 
