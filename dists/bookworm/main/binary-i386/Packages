@@ -1,14 +1,14 @@
 Package: openelp
-Version: 0.9.4~dev+daily20261108.2.1.g6605f101cbc6-1~bookworm
+Version: 0.9.4~dev+daily20261108.3.1.g1ae9c3ed9a60-1~bookworm
 Architecture: i386
 Maintainer: OpenELP DB9CR packaging <criede@users.noreply.github.com>
-Installed-Size: 168
-Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22)
-Filename: pool/bookworm/main/o/openelp/openelp_0.9.4~dev+daily20261108.2.1.g6605f101cbc6-1~bookworm_i386.deb
-Size: 35148
-MD5sum: 3c9c94bb083b455d8e492dcc484ab86b
-SHA1: 27044230ab6f74b93283c523e8b2f5b39bcc7a46
-SHA256: 3d210ff40502ffbd994ca3f61cd04bfc679a065023a2b2e112f5da41555c4955
+Installed-Size: 176
+Depends: libc6 (>= 2.34), libpcre2-8-0 (>= 10.22), passwd
+Filename: pool/bookworm/main/o/openelp/openelp_0.9.4~dev+daily20261108.3.1.g1ae9c3ed9a60-1~bookworm_i386.deb
+Size: 36332
+MD5sum: f60dd919f0628126731a41e250d7f867
+SHA1: 89d7f33506f8c17cd607f61700aacf375de3e00a
+SHA256: 8e9bb05424cf0fcade991107b41e72a6501f107dd7c856f68e2b1e3832089b5e
 Section: hamradio
 Priority: optional
 Homepage: https://github.com/cottsay/openelp
@@ -20,5 +20,6 @@ Description: Open Source EchoLink Proxy
  .
  This package contains the openelpd daemon, its library, a sample
  configuration in /etc/openelp/ELProxy.conf and a systemd service
- (openelp.service, not enabled automatically).
+ (openelp.service, not enabled automatically), which runs the proxy as
+ the unprivileged user "openelp" in a systemd sandbox.
 
