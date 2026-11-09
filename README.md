@@ -70,7 +70,7 @@ OpenELP, an Open Source EchoLink Proxy
 >   file and install it with `sudo apt install ./openelp_*.deb`.
 >
 > Details on how the packages are built and published:
-> [UPSTREAM-SYNC.MD](.github/UPSTREAM-SYNC.MD).
+> [UPSTREAM-SYNC.MD](https://github.com/criede/openelp/blob/main/.github/UPSTREAM-SYNC.MD).
 
 OpenELP is an open source EchoLink proxy for Linux and Windows. It aims to be
 efficient and maintain a small footprint, while still implementing all of the
@@ -133,8 +133,9 @@ Resources
 * [APT repository quickstart](https://criede.github.io/openelp/#quickstart) --
   Install OpenELP on Debian and Raspberry Pi OS (daily builds and upstream
   releases)
-* [Packaging and upstream sync](.github/UPSTREAM-SYNC.MD) -- How the packages
-  and the APT repository of this fork are built and published
+* [Packaging and upstream sync](https://github.com/criede/openelp/blob/main/.github/UPSTREAM-SYNC.MD)
+  -- How the packages and the APT repository of this fork are built and
+  published
 * [Upstream project](https://github.com/cottsay/openelp) -- The original
   OpenELP project on GitHub
 * [svxlink-db9cr](https://github.com/criede/svxlink-db9cr) -- Companion
