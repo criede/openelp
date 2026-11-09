@@ -14,6 +14,11 @@ jobs:
   build_and_test:
     name: Build and Test
     runs-on: ${{matrix.os}}
+    # The bundled PCRE2 10.42 still declares cmake_minimum_required below
+    # 3.5, which CMake 4 (on the macOS and Windows runners) rejects unless
+    # this compatibility floor is provided.
+    env:
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
     strategy:
       fail-fast: false
       matrix:
@@ -109,32 +114,15 @@ jobs:
   build_documentation:
     name: Build Documentation
     runs-on: ubuntu-latest
-    # The pinned Doxygen 1.9.7 binary is linked against libclang.so.9, which
-    # only ships on Ubuntu 20.04. GitHub retired the 20.04 runner image, so
-    # the job runs in a focal container to keep that toolchain available.
-    container: ubuntu:20.04
     steps:
       - name: Install Prerequisites
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            ca-certificates wget tar zstd git \
-            cmake make gcc libpcre2-dev \
-            libclang-cpp9 libclang1-9
-      - name: Cache Doxygen
-        id: cache-doxygen
-        uses: actions/cache@v4
-        with:
-          path: ${{runner.workspace}}/doxygen
-          key: doxygen-1.9.7
-      - name: Download Doxygen
-        if: steps.cache-doxygen.outputs.cache-hit != 'true'
-        working-directory: ${{runner.workspace}}
-        run: |
-          wget -O - https://www.doxygen.nl/files/doxygen-1.9.7.linux.bin.tar.gz | tar -xz
-          mv doxygen-1.9.7 doxygen
+        # The pinned Doxygen 1.9.7 binary is no longer hosted upstream, so
+        # the job uses the distribution's Doxygen, which pulls in its own
+        # matching libclang.
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y --no-install-recommends
+          doxygen graphviz libpcre2-dev
       - name: Clone project
         uses: actions/checkout@v4
       - name: Create build environment
@@ -148,7 +136,6 @@ jobs:
           cmake ${{github.workspace}}
           -Werror=dev
           -Wno-error=deprecated
-          -DCMAKE_PROGRAM_PATH:PATH="${{runner.workspace}}/doxygen/bin"
           -DBUILD_TESTING:BOOL=OFF
           -DBUILD_SHARED_LIBS:BOOL=OFF
           -DOPENELP_DOC_HTMLHELP:BOOL=OFF
