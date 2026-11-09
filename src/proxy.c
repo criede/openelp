@@ -1047,6 +1047,9 @@ int get_password_response(uint32_t nonce, const char *password,
 	uint8_t *pass_with_nonce = malloc(pass_with_nonce_len);
 	char *iter = (char *)pass_with_nonce;
 
+	if (pass_with_nonce == NULL)
+		return -ENOMEM;
+
 	while (*password != '\0') {
 		if (*password >= 97 && *password <= 122)
 			*iter = *password - 32;

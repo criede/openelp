@@ -810,7 +810,7 @@ void conn_get_remote_addr(const struct conn_handle *conn, char dest[54])
 		inet_ntop(addr->sin_family, &addr->sin_addr.s_addr, dest, 46);
 		dest += strlen(dest);
 		dest[0] = ':';
-		conn_port_to_str(addr->sin_port, dest + 1);
+		conn_port_to_str(ntohs(addr->sin_port), dest + 1);
 		break;
 	case AF_INET6:
 		dest[0] = '[';
@@ -819,7 +819,7 @@ void conn_get_remote_addr(const struct conn_handle *conn, char dest[54])
 		dest += strlen(dest);
 		dest[0] = ']';
 		dest[1] = ':';
-		conn_port_to_str(addr6->sin6_port, dest + 2);
+		conn_port_to_str(ntohs(addr6->sin6_port), dest + 2);
 		break;
 	default:
 		strcpy(dest, "(unknown)");
