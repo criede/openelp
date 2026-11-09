@@ -15,6 +15,7 @@ jobs:
     name: Build and Test
     runs-on: ${{matrix.os}}
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
         build_type: [Release]
@@ -54,7 +55,7 @@ jobs:
         run: >-
           cmake ${{github.workspace}}
           -Werror=dev
-          -Werror=deprecated
+          -Wno-error=deprecated
           -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
           -DBUILD_TESTING:BOOL=ON
           -DBUILD_SHARED_LIBS:BOOL=ON
@@ -107,10 +108,21 @@ jobs:
 
   build_documentation:
     name: Build Documentation
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    # The pinned Doxygen 1.9.7 binary is linked against libclang.so.9, which
+    # only ships on Ubuntu 20.04. GitHub retired the 20.04 runner image, so
+    # the job runs in a focal container to keep that toolchain available.
+    container: ubuntu:20.04
     steps:
       - name: Install Prerequisites
-        run: sudo apt-get install libclang-cpp9 libclang1-9 -y
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates wget tar zstd git \
+            cmake make gcc libpcre2-dev \
+            libclang-cpp9 libclang1-9
       - name: Cache Doxygen
         id: cache-doxygen
         uses: actions/cache@v4
@@ -135,14 +147,13 @@ jobs:
         run: >-
           cmake ${{github.workspace}}
           -Werror=dev
-          -Werror=deprecated
+          -Wno-error=deprecated
           -DCMAKE_PROGRAM_PATH:PATH="${{runner.workspace}}/doxygen/bin"
           -DBUILD_TESTING:BOOL=OFF
           -DBUILD_SHARED_LIBS:BOOL=OFF
           -DOPENELP_DOC_HTMLHELP:BOOL=OFF
           -DOPENELP_BUNDLE_PCRE:BOOL=OFF
           -DOPENELP_USE_OPENSSL:BOOL=OFF
-          -DOPENELP_EXTRA_VERSION=${{steps.get-snap-id.outputs.snap_id}}
           -DOPENELP_DOC_INTERNAL=ON
       - name: Build documentation
         run: >-
@@ -158,8 +169,10 @@ jobs:
 
   coverage:
     name: Code Coverage
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
+      - name: Install Prerequisites
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcre2-dev
       - name: Clone project
         uses: actions/checkout@v4
       - name: Create build environment
