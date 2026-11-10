@@ -91,14 +91,14 @@ jobs:
       # to build from source_repository/source_ref (for the daily build the
       # same repository and commit; for a release build the upstream tag).
       - name: Check out build tooling
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6, Node.js 24
         with:
           ref: ${{ inputs.tools_ref || github.sha }}
           path: tools
           persist-credentials: false
 
       - name: Check out source to build
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, Node.js 24
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6, Node.js 24
         with:
           repository: ${{ inputs.source_repository || github.repository }}
           ref: ${{ inputs.source_ref }}
