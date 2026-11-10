@@ -46,12 +46,12 @@ jobs:
 
     steps:
       - name: Cache PCRE2
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{runner.workspace}}/build/pcre-prefix/src/pcre2-10.42.tar.gz
           key: pcre2-10.42
       - name: Clone project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Get snapshot ID
         id: get-snap-id
         shell: bash
@@ -111,7 +111,7 @@ jobs:
           -j2
           -t package
       - name: Upload package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: OpenELP-${{runner.os}}
           path: ${{runner.workspace}}/build/_CPack_Packages/${{runner.os}}/ZIP/OpenELP-${{runner.os}}/*
@@ -129,7 +129,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends
           doxygen graphviz libpcre2-dev
       - name: Clone project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Create build environment
         shell: bash
         run: |
@@ -154,7 +154,7 @@ jobs:
           -j2
           -t doc
       - name: Upload documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: OpenELP-HTML-Docs
           path: ${{runner.workspace}}/build/doc/html/*
@@ -166,7 +166,7 @@ jobs:
       - name: Install Prerequisites
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcre2-dev
       - name: Clone project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Create build environment
         shell: bash
         working-directory: ${{runner.workspace}}
@@ -202,7 +202,7 @@ jobs:
           find ${{runner.workspace}}/build -name '*.gcda' |
           xargs gcov -p -s ${{runner.workspace}}
       - name: Upload coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           directory: ${{github.workspace}}
           token: ${{ secrets.CODECOV_TOKEN }}
