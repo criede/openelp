@@ -10,6 +10,11 @@ on:  # yamllint disable-line rule:truthy
       - main
       - release/*
 
+# Least privilege: all three jobs only check out the code and upload
+# artifacts, neither of which needs a writable token.
+permissions:
+  contents: read
+
 jobs:
   build_and_test:
     name: Build and Test

@@ -1,0 +1,19 @@
+# Keeps the GitHub Actions used in .github/workflows/ up to date. The
+# packaging workflows of this fork pin actions by commit SHA (see
+# AGENTS.md); Dependabot preserves that pin style and bumps the SHA
+# together with its version comment, so the pins stay current without
+# manual tracking. No package-ecosystem entry for the C/CMake sources:
+# the bundled PCRE2 is fetched as a tarball, so there is no manifest for
+# Dependabot to track (its security alerts cover that separately).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"

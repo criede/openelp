@@ -5,6 +5,11 @@ on:
     branches:
       - release/*
 
+# Least privilege: the single job only checks out the code and uploads an
+# artifact, neither of which needs a writable token.
+permissions:
+  contents: read
+
 jobs:
   build_windows_installer:
     name: Build Windows Installer
